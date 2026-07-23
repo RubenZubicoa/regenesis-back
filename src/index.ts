@@ -1,12 +1,15 @@
 import "dotenv/config";
 import { run } from "./db/database";
-import { seedDemoClientIfEmpty } from "./services/client.service";
+import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/client.service";
+import { seedDemoProgramsIfEmpty } from "./services/program.service";
 import server from "./server";
 
 const port = Number(process.env.PORT) || 3000;
 
 async function main() {
   await run();
+  await seedDemoProgramsIfEmpty();
+  await migrateClientProgramRefs();
   await seedDemoClientIfEmpty();
   server.listen(port, () => {
     console.log(`API escuchando en http://localhost:${port}`);

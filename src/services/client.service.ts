@@ -1,6 +1,9 @@
+import { ObjectId } from "mongodb";
+
 import type { CreateClientInput, UpdateClientInput } from "../entities/Client";
 import { toPublicClient } from "../entities/Client";
 import * as clientRepository from "../repositories/client.repository";
+import * as programRepository from "../repositories/program.repository";
 
 const REQUIRED_FIELDS: (keyof CreateClientInput)[] = [
   "name",
@@ -29,6 +32,22 @@ function assertCreatePayload(body: Partial<CreateClientInput>): asserts body is 
   }
 }
 
+function parseProgramId(value: unknown): ObjectId {
+  if (value instanceof ObjectId) return value;
+  if (typeof value === "string" && ObjectId.isValid(value)) {
+    return new ObjectId(value);
+  }
+  throw Object.assign(new Error("Id de programa inválido"), { status: 400 });
+}
+
+async function assertProgramExists(programId: ObjectId) {
+  const program = await programRepository.findProgramById(programId.toHexString());
+  if (!program) {
+    throw Object.assign(new Error("Programa no encontrado"), { status: 400 });
+  }
+  return program;
+}
+
 export async function listClients() {
   const clients = await clientRepository.findAllClients();
   return clients.map(toPublicClient);
@@ -55,26 +74,29 @@ export async function loginClient(email: string, contraseña: string) {
   return toPublicClient(client);
 }
 
-export async function createClient(body: Partial<CreateClientInput>) {
-  assertCreatePayload(body);
+export async function createClient(body: Partial<CreateClientInput> & { program?: unknown }) {
+  assertCreatePayload(body as Partial<CreateClientInput>);
 
-  const existing = await clientRepository.findClientByEmail(body.email);
+  const existing = await clientRepository.findClientByEmail(body.email!);
   if (existing) {
     throw Object.assign(new Error("Ya existe un cliente con ese email"), { status: 409 });
   }
 
+  const programId = parseProgramId(body.program);
+  await assertProgramExists(programId);
+
   const payload: CreateClientInput = {
-    name: body.name,
-    fullName: body.fullName,
-    email: body.email,
-    telefono: body.telefono,
-    contraseña: body.contraseña,
-    goal: body.goal,
-    coach: body.coach,
-    plan: body.plan,
-    program: Number(body.program),
-    startDate: body.startDate,
-    endDate: body.endDate,
+    name: body.name!,
+    fullName: body.fullName!,
+    email: body.email!,
+    telefono: body.telefono!,
+    contraseña: body.contraseña!,
+    goal: body.goal!,
+    coach: body.coach!,
+    plan: body.plan!,
+    program: programId,
+    startDate: body.startDate!,
+    endDate: body.endDate!,
     week: body.week ?? 1,
     totalWeeks: body.totalWeeks ?? 12,
     phase: body.phase ?? 1,
@@ -86,7 +108,7 @@ export async function createClient(body: Partial<CreateClientInput>) {
   return toPublicClient(created);
 }
 
-export async function updateClient(id: string, body: UpdateClientInput) {
+export async function updateClient(id: string, body: UpdateClientInput & { program?: unknown }) {
   const current = await clientRepository.findClientById(id);
   if (!current) {
     throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
@@ -100,7 +122,11 @@ export async function updateClient(id: string, body: UpdateClientInput) {
   }
 
   const update: UpdateClientInput = { ...body };
-  if (update.program !== undefined) update.program = Number(update.program);
+  if (body.program !== undefined) {
+    const programId = parseProgramId(body.program);
+    await assertProgramExists(programId);
+    update.program = programId;
+  }
   if (update.week !== undefined) update.week = Number(update.week);
   if (update.totalWeeks !== undefined) update.totalWeeks = Number(update.totalWeeks);
   if (update.phase !== undefined) update.phase = Number(update.phase);
@@ -120,10 +146,52 @@ export async function deleteClient(id: string) {
   }
 }
 
+const LEGACY_PROGRAM_NAMES: Record<number, string> = {
+  1: "Nutrición",
+  2: "Entrenamiento",
+  3: "Nutrición + Entrenamiento",
+};
+
+/** Si un cliente aún tiene `program` numérico (legado), lo sustituye por el ObjectId real. */
+export async function migrateClientProgramRefs() {
+  const clients = await clientRepository.findAllClients();
+
+  for (const client of clients) {
+    const rawProgram = client.program as unknown;
+    if (rawProgram instanceof ObjectId) continue;
+    if (typeof rawProgram === "string" && ObjectId.isValid(rawProgram)) {
+      await clientRepository.updateClientById(client._id.toHexString(), {
+        program: new ObjectId(rawProgram),
+      });
+      continue;
+    }
+
+    if (typeof rawProgram === "number") {
+      const name = LEGACY_PROGRAM_NAMES[rawProgram];
+      if (!name) continue;
+      const program = await programRepository.findProgramByName(name);
+      if (!program) continue;
+      await clientRepository.updateClientById(client._id.toHexString(), {
+        program: program._id,
+      });
+      console.log(`Cliente ${client.email}: program migrado a ${program._id.toHexString()}`);
+    }
+  }
+}
+
 /** Inserta un cliente de demo si la colección está vacía. */
 export async function seedDemoClientIfEmpty() {
   const clients = await clientRepository.findAllClients();
   if (clients.length > 0) return;
+
+  const program =
+    (await programRepository.findProgramByName("Nutrición + Entrenamiento")) ??
+    (await programRepository.findAllPrograms())[0];
+
+  if (!program) {
+    console.warn("No hay programas para asignar al cliente demo");
+    return;
+  }
 
   await createClient({
     name: "Rubén",
@@ -134,7 +202,7 @@ export async function seedDemoClientIfEmpty() {
     goal: "Recomposición corporal",
     coach: "Onatz Health Coach",
     plan: "Método Regenesis",
-    program: 3,
+    program: program._id,
     startDate: "2026-06-11",
     endDate: "2026-09-03",
     week: 6,

@@ -12,7 +12,8 @@ export interface Client {
   goal: string;
   coach: string;
   plan: string;
-  program: number;
+  /** Referencia al `_id` del programa en la colección Program. */
+  program: ObjectId;
   startDate: string;
   endDate: string;
   week: number;

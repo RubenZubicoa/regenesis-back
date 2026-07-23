@@ -4,6 +4,7 @@ import cors from 'cors';
 
 import { errorMiddleware } from './middlewares/error.middeware';
 import clientRoutes from './routes/client.routes';
+import programRoutes from './routes/program.routes';
 
 const server: Application = express();
 
@@ -26,6 +27,7 @@ server.use("/uploads", express.static("uploads"));
 
 // public routes
 server.use("/api/clients", clientRoutes);
+server.use("/api/programs", programRoutes);
 
 server.use(errorMiddleware);
 
