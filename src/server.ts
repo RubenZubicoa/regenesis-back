@@ -4,6 +4,8 @@ import cors from 'cors';
 
 import { errorMiddleware } from './middlewares/error.middeware';
 import clientRoutes from './routes/client.routes';
+import measurementRoutes from './routes/measurement.routes';
+import measurementMasterRoutes from './routes/measurementMaster.routes';
 import programRoutes from './routes/program.routes';
 
 const server: Application = express();
@@ -28,6 +30,8 @@ server.use("/uploads", express.static("uploads"));
 // public routes
 server.use("/api/clients", clientRoutes);
 server.use("/api/programs", programRoutes);
+server.use("/api/measurement-masters", measurementMasterRoutes);
+server.use("/api/measurements", measurementRoutes);
 
 server.use(errorMiddleware);
 
