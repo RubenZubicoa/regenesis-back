@@ -4,6 +4,7 @@ import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/clie
 import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
 import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
 import { seedDemoProgramsIfEmpty } from "./services/program.service";
+import { seedDemoWeightsIfEmpty } from "./services/weight.service";
 import { migrateMeasurementObjectIds } from "./repositories/measurement.repository";
 import server from "./server";
 
@@ -20,6 +21,7 @@ async function main() {
     console.log(`Medidas migradas a ObjectId: ${migrated}`);
   }
   await seedDemoMeasurementsIfEmpty();
+  await seedDemoWeightsIfEmpty();
   server.listen(port, () => {
     console.log(`API escuchando en http://localhost:${port}`);
   });

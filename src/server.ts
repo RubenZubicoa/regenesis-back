@@ -7,6 +7,7 @@ import clientRoutes from './routes/client.routes';
 import measurementRoutes from './routes/measurement.routes';
 import measurementMasterRoutes from './routes/measurementMaster.routes';
 import programRoutes from './routes/program.routes';
+import weightRoutes from './routes/weight.routes';
 
 const server: Application = express();
 
@@ -32,6 +33,7 @@ server.use("/api/clients", clientRoutes);
 server.use("/api/programs", programRoutes);
 server.use("/api/measurement-masters", measurementMasterRoutes);
 server.use("/api/measurements", measurementRoutes);
+server.use("/api/weights", weightRoutes);
 
 server.use(errorMiddleware);
 
