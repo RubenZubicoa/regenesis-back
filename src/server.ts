@@ -8,6 +8,8 @@ import measurementRoutes from './routes/measurement.routes';
 import measurementMasterRoutes from './routes/measurementMaster.routes';
 import programRoutes from './routes/program.routes';
 import weightRoutes from './routes/weight.routes';
+import wellnessRoutes from './routes/wellness.routes';
+import wellnessMasterRoutes from './routes/wellnessMaster.routes';
 
 const server: Application = express();
 
@@ -34,6 +36,8 @@ server.use("/api/programs", programRoutes);
 server.use("/api/measurement-masters", measurementMasterRoutes);
 server.use("/api/measurements", measurementRoutes);
 server.use("/api/weights", weightRoutes);
+server.use("/api/wellness-masters", wellnessMasterRoutes);
+server.use("/api/wellness", wellnessRoutes);
 
 server.use(errorMiddleware);
 
