@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { run } from "./db/database";
 import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/client.service";
+import { seedDemoDailyStepsIfEmpty } from "./services/dailySteps.service";
 import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
 import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
 import { seedDemoProgramsIfEmpty } from "./services/program.service";
@@ -34,6 +35,7 @@ async function main() {
     console.log(`Registros Wellness migrados a ObjectId: ${wellnessMigrated}`);
   }
   await seedDemoWellnessIfEmpty();
+  await seedDemoDailyStepsIfEmpty();
   server.listen(port, () => {
     console.log(`API escuchando en http://localhost:${port}`);
   });

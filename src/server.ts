@@ -4,6 +4,7 @@ import cors from 'cors';
 
 import { errorMiddleware } from './middlewares/error.middeware';
 import clientRoutes from './routes/client.routes';
+import dailyStepsRoutes from './routes/dailySteps.routes';
 import measurementRoutes from './routes/measurement.routes';
 import measurementMasterRoutes from './routes/measurementMaster.routes';
 import programRoutes from './routes/program.routes';
@@ -38,6 +39,7 @@ server.use("/api/measurements", measurementRoutes);
 server.use("/api/weights", weightRoutes);
 server.use("/api/wellness-masters", wellnessMasterRoutes);
 server.use("/api/wellness", wellnessRoutes);
+server.use("/api/daily-steps", dailyStepsRoutes);
 
 server.use(errorMiddleware);
 
