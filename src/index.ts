@@ -2,9 +2,12 @@ import "dotenv/config";
 import { run } from "./db/database";
 import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/client.service";
 import { seedDemoDailyStepsIfEmpty } from "./services/dailySteps.service";
+import { seedDemoMacrosIfEmpty } from "./services/macros.service";
 import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
 import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
 import { seedDemoProgramsIfEmpty } from "./services/program.service";
+import { seedDemoShoppingListIfEmpty } from "./services/shoppingList.service";
+import { seedDemoSupplementsIfEmpty } from "./services/supplements.service";
 import { seedDemoWeightsIfEmpty } from "./services/weight.service";
 import { seedDemoWellnessMastersIfEmpty } from "./services/wellnessMaster.service";
 import { seedDemoWellnessIfEmpty } from "./services/wellness.service";
@@ -36,6 +39,9 @@ async function main() {
   }
   await seedDemoWellnessIfEmpty();
   await seedDemoDailyStepsIfEmpty();
+  await seedDemoShoppingListIfEmpty();
+  await seedDemoMacrosIfEmpty();
+  await seedDemoSupplementsIfEmpty();
   server.listen(port, () => {
     console.log(`API escuchando en http://localhost:${port}`);
   });
