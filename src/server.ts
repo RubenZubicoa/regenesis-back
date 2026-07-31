@@ -9,11 +9,13 @@ import macrosRoutes from './routes/macros.routes';
 import measurementRoutes from './routes/measurement.routes';
 import measurementMasterRoutes from './routes/measurementMaster.routes';
 import programRoutes from './routes/program.routes';
+import routineDayRoutes from './routes/routineDay.routes';
 import shoppingListRoutes from './routes/shoppingList.routes';
 import supplementsRoutes from './routes/supplements.routes';
 import weightRoutes from './routes/weight.routes';
 import wellnessRoutes from './routes/wellness.routes';
 import wellnessMasterRoutes from './routes/wellnessMaster.routes';
+import workoutHistoryRoutes from './routes/workoutHistory.routes';
 
 const server: Application = express();
 
@@ -46,6 +48,8 @@ server.use("/api/daily-steps", dailyStepsRoutes);
 server.use("/api/shopping-lists", shoppingListRoutes);
 server.use("/api/macros", macrosRoutes);
 server.use("/api/supplements", supplementsRoutes);
+server.use("/api/routine-days", routineDayRoutes);
+server.use("/api/workout-history", workoutHistoryRoutes);
 
 server.use(errorMiddleware);
 

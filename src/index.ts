@@ -6,11 +6,13 @@ import { seedDemoMacrosIfEmpty } from "./services/macros.service";
 import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
 import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
 import { seedDemoProgramsIfEmpty } from "./services/program.service";
+import { seedDemoRoutineDaysIfEmpty } from "./services/routineDay.service";
 import { seedDemoShoppingListIfEmpty } from "./services/shoppingList.service";
 import { seedDemoSupplementsIfEmpty } from "./services/supplements.service";
 import { seedDemoWeightsIfEmpty } from "./services/weight.service";
 import { seedDemoWellnessMastersIfEmpty } from "./services/wellnessMaster.service";
 import { seedDemoWellnessIfEmpty } from "./services/wellness.service";
+import { seedDemoWorkoutHistoryIfEmpty } from "./services/workoutHistory.service";
 import { migrateMeasurementObjectIds } from "./repositories/measurement.repository";
 import { migrateWellnessRefs } from "./repositories/wellness.repository";
 import * as wellnessMasterRepository from "./repositories/wellnessMaster.repository";
@@ -42,6 +44,8 @@ async function main() {
   await seedDemoShoppingListIfEmpty();
   await seedDemoMacrosIfEmpty();
   await seedDemoSupplementsIfEmpty();
+  await seedDemoRoutineDaysIfEmpty();
+  await seedDemoWorkoutHistoryIfEmpty();
   server.listen(port, () => {
     console.log(`API escuchando en http://localhost:${port}`);
   });
