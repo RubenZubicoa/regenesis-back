@@ -7,6 +7,17 @@ import type {
 } from "../entities/DailySteps";
 import * as clientRepository from "../repositories/client.repository";
 import * as dailyStepsRepository from "../repositories/dailySteps.repository";
+import { getCurrentWeek } from "../utils/programProgress";
+
+const EMPTY_WEEK_DAYS = [
+  { label: "L", value: 0 },
+  { label: "M", value: 0 },
+  { label: "X", value: 0 },
+  { label: "J", value: 0 },
+  { label: "V", value: 0 },
+  { label: "S", value: 0 },
+  { label: "D", value: 0 },
+];
 
 const REQUIRED_FIELDS: (keyof CreateDailyStepsInput)[] = [
   "clientId",
@@ -86,7 +97,7 @@ export async function listDailySteps(clientId?: string) {
   return getDailyStepsByClientId(clientId);
 }
 
-/** Pasos de un cliente concreto. */
+/** Pasos de un cliente concreto. Asegura registro de la semana actual. */
 export async function getDailyStepsByClientId(clientId: string) {
   if (!ObjectId.isValid(clientId)) {
     throw Object.assign(new Error("Id de cliente inválido"), { status: 400 });
@@ -97,7 +108,22 @@ export async function getDailyStepsByClientId(clientId: string) {
     throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
   }
 
-  return dailyStepsRepository.findDailyStepsByClient(clientId);
+  const currentWeek = getCurrentWeek(client.startDate, client.endDate);
+  let records = await dailyStepsRepository.findDailyStepsByClient(clientId);
+  const hasCurrentWeek = records.some((record) => record.week === currentWeek);
+
+  if (!hasCurrentWeek) {
+    const previous = [...records].sort((a, b) => b.week - a.week)[0];
+    await dailyStepsRepository.insertDailySteps({
+      clientId: client._id,
+      week: currentWeek,
+      goal: previous?.goal ?? 10000,
+      days: EMPTY_WEEK_DAYS.map((day) => ({ ...day })),
+    });
+    records = await dailyStepsRepository.findDailyStepsByClient(clientId);
+  }
+
+  return records;
 }
 
 export async function getDailyStepsById(id: string) {
@@ -208,7 +234,7 @@ export async function seedDemoDailyStepsIfEmpty() {
 
   await dailyStepsRepository.insertDailySteps({
     clientId: client._id,
-    week: client.week ?? 6,
+    week: getCurrentWeek(client.startDate, client.endDate),
     goal: 10000,
     days: [
       { label: "L", value: 11240 },

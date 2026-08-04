@@ -161,12 +161,16 @@ export async function updateWeight(
     update.data = assertNumberArray(body.data, "data");
   }
 
-  const nextLabels = update.labels ?? current.labels;
-  const nextData = update.data ?? current.data;
+  let nextLabels = update.labels ?? current.labels ?? [];
+  let nextData = update.data ?? current.data ?? [];
+
+  // Repara inconsistencias previas (p. ej. data más larga que labels).
   if (nextLabels.length !== nextData.length) {
-    throw Object.assign(new Error("labels y data deben tener la misma longitud"), {
-      status: 400,
-    });
+    const len = Math.min(nextLabels.length, nextData.length);
+    nextLabels = nextLabels.slice(0, len);
+    nextData = nextData.slice(0, len);
+    update.labels = nextLabels;
+    update.data = nextData;
   }
 
   if (body.start !== undefined) update.start = assertNumber(body.start, "start");

@@ -4,6 +4,7 @@ import type { CreateClientInput, UpdateClientInput } from "../entities/Client";
 import { toPublicClient } from "../entities/Client";
 import * as clientRepository from "../repositories/client.repository";
 import * as programRepository from "../repositories/program.repository";
+import { getCurrentWeek, getTotalWeeks } from "../utils/programProgress";
 
 const REQUIRED_FIELDS: (keyof CreateClientInput)[] = [
   "name",
@@ -97,8 +98,8 @@ export async function createClient(body: Partial<CreateClientInput> & { program?
     program: programId,
     startDate: body.startDate!,
     endDate: body.endDate!,
-    week: body.week ?? 1,
-    totalWeeks: body.totalWeeks ?? 12,
+    week: getCurrentWeek(body.startDate!, body.endDate!),
+    totalWeeks: getTotalWeeks(body.startDate!, body.endDate!),
     phase: body.phase ?? 1,
     totalPhases: body.totalPhases ?? 3,
     avatar: body.avatar ?? "",
@@ -127,10 +128,13 @@ export async function updateClient(id: string, body: UpdateClientInput & { progr
     await assertProgramExists(programId);
     update.program = programId;
   }
-  if (update.week !== undefined) update.week = Number(update.week);
-  if (update.totalWeeks !== undefined) update.totalWeeks = Number(update.totalWeeks);
   if (update.phase !== undefined) update.phase = Number(update.phase);
   if (update.totalPhases !== undefined) update.totalPhases = Number(update.totalPhases);
+
+  const nextStart = String(update.startDate ?? current.startDate);
+  const nextEnd = String(update.endDate ?? current.endDate);
+  update.week = getCurrentWeek(nextStart, nextEnd);
+  update.totalWeeks = getTotalWeeks(nextStart, nextEnd);
 
   const updated = await clientRepository.updateClientById(id, update);
   if (!updated) {
