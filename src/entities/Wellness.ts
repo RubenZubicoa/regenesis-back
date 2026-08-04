@@ -5,7 +5,7 @@ export const WELLNESS_COLLECTION = "Wellness";
 export interface Wellness {
   _id: ObjectId;
   /** Id del cliente (colección Client). */
-  clientId: string;
+  clientId: ObjectId;
   /** Id del tipo de bienestar (colección WellnessMaster). */
   wellnessId: ObjectId;
   value: number;

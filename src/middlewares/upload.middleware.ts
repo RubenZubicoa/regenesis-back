@@ -15,7 +15,7 @@ export function uploadProductImages(req: Request, res: Response, next: NextFunct
     });
   }
 
-  multer.array("images")(req, res, (err) => {
+  multer.array("images")(req, res, (err: unknown) => {
     if (err) return next(err);
     next();
   });
@@ -35,7 +35,7 @@ export function uploadBrandImage(req: Request, res: Response, next: NextFunction
     });
   }
   
-  multer.single("logo")(req, res, (err) => {
+  multer.single("logo")(req, res, (err: unknown) => {
     if (err) return next(err);
     next();
   });
