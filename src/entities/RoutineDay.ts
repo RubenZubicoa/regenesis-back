@@ -2,19 +2,23 @@ import { ObjectId } from "mongodb";
 
 export const ROUTINE_DAY_COLLECTION = "RoutineDay";
 
-export type ExerciseType = "strength" | "cardio";
+export type { ExerciseType } from "./ExerciseMaster";
 
 export interface RepRange {
   min: number;
   max: number;
 }
 
-export interface Exercise {
-  name: string;
+/**
+ * Ejercicio asignado a un día de rutina.
+ * La identidad (nombre, imagen, explicación, tipo) vive en ExerciseMaster.
+ */
+export interface RoutineExercise {
+  /** Id del ejercicio en ExerciseMaster. */
+  exerciseId: ObjectId;
   /** Descripción de series, p. ej. "4 x 8-10" (fuerza) o "15 min" (cardio). */
   sets: string;
   rest: string;
-  type: ExerciseType;
   /** Nº de series a registrar (solo fuerza). */
   seriesCount?: number;
   /** Rango de repeticiones objetivo por serie (solo fuerza). */
@@ -23,10 +27,6 @@ export interface Exercise {
   repUnit?: "reps" | "s";
   /** Objetivos de cardio. */
   targetKm?: number;
-  /** URL de imagen ilustrativa del ejercicio. */
-  imageUrl?: string;
-  /** Explicación técnica / técnica de ejecución para el cliente. */
-  explanation?: string;
 }
 
 export interface RoutineDay {
@@ -37,7 +37,7 @@ export interface RoutineDay {
   focus: string;
   done: boolean;
   duration: string;
-  exercises: Exercise[];
+  exercises: RoutineExercise[];
 }
 
 /** Datos para crear un día de rutina (sin `_id`). */

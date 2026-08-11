@@ -7,7 +7,11 @@ import { seedDemoMealsIfEmpty } from "./services/meal.service";
 import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
 import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
 import { seedDemoProgramsIfEmpty } from "./services/program.service";
-import { seedDemoRoutineDaysIfEmpty } from "./services/routineDay.service";
+import { seedDemoExerciseMastersIfEmpty } from "./services/exerciseMaster.service";
+import {
+  migrateRoutineExercisesToMaster,
+  seedDemoRoutineDaysIfEmpty,
+} from "./services/routineDay.service";
 import { seedDemoShoppingListIfEmpty } from "./services/shoppingList.service";
 import { seedDemoSupplementsIfEmpty } from "./services/supplements.service";
 import { seedDemoWeightsIfEmpty } from "./services/weight.service";
@@ -46,6 +50,11 @@ async function main() {
   await seedDemoMacrosIfEmpty();
   await seedDemoMealsIfEmpty();
   await seedDemoSupplementsIfEmpty();
+  await seedDemoExerciseMastersIfEmpty();
+  const routineMigrated = await migrateRoutineExercisesToMaster();
+  if (routineMigrated > 0) {
+    console.log(`Ejercicios de rutina migrados a ExerciseMaster: ${routineMigrated}`);
+  }
   await seedDemoRoutineDaysIfEmpty();
   await seedDemoWorkoutHistoryIfEmpty();
   server.listen(port, () => {
