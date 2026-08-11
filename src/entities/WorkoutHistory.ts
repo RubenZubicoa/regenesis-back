@@ -23,6 +23,14 @@ export type ExerciseLog = {
   cardio?: CardioLog;
 };
 
+/** Foto o vídeo adjunto a una sesión de entrenamiento. */
+export type WorkoutMedia = {
+  /** URI local o URL remota. */
+  uri: string;
+  type: "image" | "video";
+  mimeType?: string;
+};
+
 export interface WorkoutHistory {
   _id: ObjectId;
   /** Id del cliente (colección Client). */
@@ -34,6 +42,8 @@ export interface WorkoutHistory {
   duration: string;
   durationMinutes: number;
   exercises: ExerciseLog[];
+  /** Fotos/vídeos opcionales de la sesión. */
+  media?: WorkoutMedia[];
 }
 
 /** Datos para crear un registro de histórico (sin `_id`). */

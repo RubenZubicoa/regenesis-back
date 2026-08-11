@@ -7,6 +7,7 @@ import type {
   ExerciseType,
   StrengthSetLog,
   UpdateWorkoutHistoryInput,
+  WorkoutMedia,
 } from "../entities/WorkoutHistory";
 import * as clientRepository from "../repositories/client.repository";
 import * as workoutHistoryRepository from "../repositories/workoutHistory.repository";
@@ -134,6 +135,39 @@ function assertExercises(value: unknown): ExerciseLog[] {
   });
 }
 
+function assertMedia(value: unknown): WorkoutMedia[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw Object.assign(new Error("media debe ser un array"), { status: 400 });
+  }
+
+  return value.map((entry, index) => {
+    if (!entry || typeof entry !== "object") {
+      throw Object.assign(new Error(`media[${index}] inválido`), { status: 400 });
+    }
+    const item = entry as Record<string, unknown>;
+    const uri = String(item.uri ?? "").trim();
+    const typeRaw = String(item.type ?? "").trim();
+    const type = typeRaw === "video" ? "video" : typeRaw === "image" ? "image" : "";
+
+    if (!uri) {
+      throw Object.assign(new Error(`media[${index}].uri es obligatorio`), { status: 400 });
+    }
+    if (!type) {
+      throw Object.assign(new Error(`media[${index}].type debe ser "image" o "video"`), {
+        status: 400,
+      });
+    }
+
+    const mimeType =
+      item.mimeType !== undefined && item.mimeType !== null && String(item.mimeType).trim()
+        ? String(item.mimeType).trim()
+        : undefined;
+
+    return { uri, type, ...(mimeType ? { mimeType } : {}) };
+  });
+}
+
 async function assertClientExists(clientId: ObjectId) {
   const client = await clientRepository.findClientById(clientId.toHexString());
   if (!client) {
@@ -189,6 +223,7 @@ export async function createWorkoutHistory(
     duration: String(body.duration).trim(),
     durationMinutes: assertNumber(body.durationMinutes, "durationMinutes"),
     exercises: assertExercises(body.exercises),
+    ...(body.media !== undefined ? { media: assertMedia(body.media) } : {}),
   };
 
   if (!payload.date) {
@@ -266,6 +301,10 @@ export async function updateWorkoutHistory(
 
   if (body.exercises !== undefined) {
     update.exercises = assertExercises(body.exercises);
+  }
+
+  if (body.media !== undefined) {
+    update.media = assertMedia(body.media);
   }
 
   const updated = await workoutHistoryRepository.updateWorkoutHistoryById(id, update);
