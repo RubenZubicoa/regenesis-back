@@ -2,11 +2,14 @@ import { ObjectId } from "mongodb";
 
 export const MEAL_COLLECTION = "Meal";
 
-export interface MealItem {
-  /** Nombre del alimento o preparación, p. ej. "Avena 50 g" */
+/** Comida completa alternativa que el cliente puede elegir. */
+export interface MealOption {
+  /** Nombre de la comida, p. ej. "Avena con claras y plátano" */
   name: string;
-  /** Calorías del alimento (opcional). */
-  kcal?: number;
+  /** Calorías aproximadas de la comida completa. */
+  kcal: number;
+  /** Descripción breve de la composición (opcional). */
+  description?: string;
 }
 
 export interface MealSlot {
@@ -16,10 +19,8 @@ export interface MealSlot {
   time: string;
   /** Icono Ionicons */
   icon: string;
-  /** Calorías totales de la toma (calculadas o estimadas). */
-  kcal: number;
-  /** Lista de alimentos que componen la toma. */
-  items: MealItem[];
+  /** Comidas completas alternativas; el cliente elige una. */
+  options: MealOption[];
 }
 
 export interface Meal {

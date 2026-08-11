@@ -23,6 +23,10 @@ export interface Exercise {
   repUnit?: "reps" | "s";
   /** Objetivos de cardio. */
   targetKm?: number;
+  /** URL de imagen ilustrativa del ejercicio. */
+  imageUrl?: string;
+  /** Explicación técnica / técnica de ejecución para el cliente. */
+  explanation?: string;
 }
 
 export interface RoutineDay {
