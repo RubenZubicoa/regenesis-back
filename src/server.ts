@@ -15,6 +15,7 @@ import supplementsRoutes from './routes/supplements.routes';
 import weightRoutes from './routes/weight.routes';
 import wellnessRoutes from './routes/wellness.routes';
 import wellnessMasterRoutes from './routes/wellnessMaster.routes';
+import mealRoutes from './routes/meal.routes';
 import workoutHistoryRoutes from './routes/workoutHistory.routes';
 
 const server: Application = express();
@@ -47,6 +48,7 @@ server.use("/api/wellness", wellnessRoutes);
 server.use("/api/daily-steps", dailyStepsRoutes);
 server.use("/api/shopping-lists", shoppingListRoutes);
 server.use("/api/macros", macrosRoutes);
+server.use("/api/meals", mealRoutes);
 server.use("/api/supplements", supplementsRoutes);
 server.use("/api/routine-days", routineDayRoutes);
 server.use("/api/workout-history", workoutHistoryRoutes);

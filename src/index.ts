@@ -3,6 +3,7 @@ import { run } from "./db/database";
 import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/client.service";
 import { seedDemoDailyStepsIfEmpty } from "./services/dailySteps.service";
 import { seedDemoMacrosIfEmpty } from "./services/macros.service";
+import { seedDemoMealsIfEmpty } from "./services/meal.service";
 import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
 import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
 import { seedDemoProgramsIfEmpty } from "./services/program.service";
@@ -43,6 +44,7 @@ async function main() {
   await seedDemoDailyStepsIfEmpty();
   await seedDemoShoppingListIfEmpty();
   await seedDemoMacrosIfEmpty();
+  await seedDemoMealsIfEmpty();
   await seedDemoSupplementsIfEmpty();
   await seedDemoRoutineDaysIfEmpty();
   await seedDemoWorkoutHistoryIfEmpty();
