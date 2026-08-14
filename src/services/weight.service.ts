@@ -1,8 +1,10 @@
-import { ObjectId } from "mongodb";
+import { ObjectId, type WithId } from "mongodb";
 
-import type { CreateWeightInput, UpdateWeightInput } from "../entities/Weight";
+import type { CreateWeightInput, UpdateWeightInput, Weight } from "../entities/Weight";
 import * as clientRepository from "../repositories/client.repository";
 import * as weightRepository from "../repositories/weight.repository";
+import { publishWeight } from "./socialFeed.service";
+import { parseShareInCommunity } from "../utils/shareInCommunity";
 
 const REQUIRED_FIELDS: (keyof CreateWeightInput)[] = [
   "clientId",
@@ -129,7 +131,18 @@ export async function createWeight(
     unit: String(body.unit),
   };
 
-  return weightRepository.insertWeight(payload);
+  const created = await weightRepository.insertWeight(payload);
+
+  if (parseShareInCommunity(body)) {
+    const client = await assertClientExists(clientId);
+    await publishWeight(client, created, {
+      label: payload.labels[payload.labels.length - 1] ?? new Date().toISOString().slice(0, 10),
+      previousKg: payload.start,
+      currentKg: payload.current,
+    });
+  }
+
+  return created;
 }
 
 export async function updateWeight(
@@ -182,7 +195,36 @@ export async function updateWeight(
   if (!updated) {
     throw Object.assign(new Error("Serie de peso no encontrada"), { status: 404 });
   }
+
+  if (parseShareInCommunity(body)) {
+    const point = getLatestWeightPoint(current, updated);
+    if (point) {
+      const client = await clientRepository.findClientById(updated.clientId.toHexString());
+      if (client) {
+        await publishWeight(client, updated, point);
+      }
+    }
+  }
+
   return updated;
+}
+
+function getLatestWeightPoint(
+  before: WithId<Weight>,
+  after: WithId<Weight>,
+): { label: string; previousKg: number; currentKg: number } | null {
+  if (JSON.stringify(before.data) === JSON.stringify(after.data)) {
+    return null;
+  }
+
+  const len = after.data.length;
+  if (len === 0) return null;
+
+  const currentKg = after.data[len - 1];
+  const previousKg = len >= 2 ? after.data[len - 2] : after.start;
+  const label = after.labels[len - 1] ?? new Date().toISOString().slice(0, 10);
+
+  return { label, previousKg, currentKg };
 }
 
 export async function deleteWeight(id: string) {

@@ -4,6 +4,8 @@ import type { CreateWellnessInput, UpdateWellnessInput } from "../entities/Welln
 import * as clientRepository from "../repositories/client.repository";
 import * as wellnessRepository from "../repositories/wellness.repository";
 import * as wellnessMasterRepository from "../repositories/wellnessMaster.repository";
+import { publishWellness } from "./socialFeed.service";
+import { parseShareInCommunity } from "../utils/shareInCommunity";
 
 const REQUIRED_FIELDS: (keyof CreateWellnessInput)[] = [
   "clientId",
@@ -112,7 +114,15 @@ export async function createWellness(
     throw Object.assign(new Error("value debe ser numérico"), { status: 400 });
   }
 
-  return wellnessRepository.insertWellness(payload);
+  const created = await wellnessRepository.insertWellness(payload);
+
+  if (parseShareInCommunity(body)) {
+    const client = await assertClientExists(clientId);
+    const master = await assertWellnessMasterExists(wellnessId);
+    await publishWellness(client, created, master);
+  }
+
+  return created;
 }
 
 export async function updateWellness(

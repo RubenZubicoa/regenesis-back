@@ -18,6 +18,7 @@ import wellnessMasterRoutes from './routes/wellnessMaster.routes';
 import mealRoutes from './routes/meal.routes';
 import exerciseMasterRoutes from './routes/exerciseMaster.routes';
 import workoutHistoryRoutes from './routes/workoutHistory.routes';
+import socialFeedRoutes from './routes/socialFeed.routes';
 
 const server: Application = express();
 
@@ -54,6 +55,7 @@ server.use("/api/supplements", supplementsRoutes);
 server.use("/api/exercise-masters", exerciseMasterRoutes);
 server.use("/api/routine-days", routineDayRoutes);
 server.use("/api/workout-history", workoutHistoryRoutes);
+server.use("/api/social-feed", socialFeedRoutes);
 
 server.use(errorMiddleware);
 

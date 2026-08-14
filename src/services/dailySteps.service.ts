@@ -7,6 +7,8 @@ import type {
 } from "../entities/DailySteps";
 import * as clientRepository from "../repositories/client.repository";
 import * as dailyStepsRepository from "../repositories/dailySteps.repository";
+import { publishSteps } from "./socialFeed.service";
+import { parseShareInCommunity } from "../utils/shareInCommunity";
 import {
   getElapsedDaysInPeriod,
   sumStepsForPeriod,
@@ -223,7 +225,38 @@ export async function updateDailySteps(
   if (!updated) {
     throw Object.assign(new Error("Registro de pasos no encontrado"), { status: 404 });
   }
+
+  if (parseShareInCommunity(body) && update.days) {
+    const changed = findChangedDay(current.days, update.days);
+    if (changed && changed.value > 0) {
+      const clientId =
+        updated.clientId instanceof ObjectId
+          ? updated.clientId.toHexString()
+          : String(updated.clientId);
+      const client = await clientRepository.findClientById(clientId);
+      if (client) {
+        await publishSteps(client, updated, {
+          dayLabel: changed.label,
+          steps: changed.value,
+        });
+      }
+    }
+  }
+
   return updated;
+}
+
+function findChangedDay(
+  before: Day[],
+  after: Day[],
+): { label: string; value: number } | null {
+  for (let index = 0; index < after.length; index += 1) {
+    const next = after[index];
+    const prev = before[index];
+    if (!next || prev?.value === next.value) continue;
+    return { label: next.label, value: next.value };
+  }
+  return null;
 }
 
 export async function deleteDailySteps(id: string) {

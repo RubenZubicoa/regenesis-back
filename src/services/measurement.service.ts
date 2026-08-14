@@ -4,6 +4,8 @@ import type { CreateMeasurementInput, UpdateMeasurementInput } from "../entities
 import * as clientRepository from "../repositories/client.repository";
 import * as measurementRepository from "../repositories/measurement.repository";
 import * as measurementMasterRepository from "../repositories/measurementMaster.repository";
+import { publishMeasurement } from "./socialFeed.service";
+import { parseShareInCommunity } from "../utils/shareInCommunity";
 
 const REQUIRED_FIELDS: (keyof CreateMeasurementInput)[] = [
   "client",
@@ -106,7 +108,15 @@ export async function createMeasurement(
     throw Object.assign(new Error("value y delta deben ser numéricos"), { status: 400 });
   }
 
-  return measurementRepository.insertMeasurement(payload);
+  const created = await measurementRepository.insertMeasurement(payload);
+
+  if (parseShareInCommunity(body)) {
+    const client = await assertClientExists(clientId);
+    const master = await assertMeasurementMasterExists(measurementMasterId);
+    await publishMeasurement(client, created, master);
+  }
+
+  return created;
 }
 
 export async function updateMeasurement(

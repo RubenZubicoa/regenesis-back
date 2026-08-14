@@ -11,6 +11,8 @@ import type {
 } from "../entities/WorkoutHistory";
 import * as clientRepository from "../repositories/client.repository";
 import * as workoutHistoryRepository from "../repositories/workoutHistory.repository";
+import { publishWorkout } from "./socialFeed.service";
+import { parseShareInCommunity } from "../utils/shareInCommunity";
 
 const REQUIRED_FIELDS: (keyof CreateWorkoutHistoryInput)[] = [
   "clientId",
@@ -239,7 +241,14 @@ export async function createWorkoutHistory(
     throw Object.assign(new Error("duration es obligatorio"), { status: 400 });
   }
 
-  return workoutHistoryRepository.insertWorkoutHistory(payload);
+  const created = await workoutHistoryRepository.insertWorkoutHistory(payload);
+
+  if (parseShareInCommunity(body)) {
+    const client = await assertClientExists(clientId);
+    await publishWorkout(client, created);
+  }
+
+  return created;
 }
 
 export async function updateWorkoutHistory(
