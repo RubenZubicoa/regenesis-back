@@ -7,7 +7,20 @@ import type {
 } from "../entities/DailySteps";
 import * as clientRepository from "../repositories/client.repository";
 import * as dailyStepsRepository from "../repositories/dailySteps.repository";
+import {
+  getElapsedDaysInPeriod,
+  sumStepsForPeriod,
+  type StepsRankingPeriod,
+} from "../utils/stepsRanking";
 import { getCurrentWeek } from "../utils/programProgress";
+
+export type StepsRankingEntry = {
+  clientId: string;
+  fullName: string;
+  avatar: string;
+  steps: number;
+  avgDaily: number;
+};
 
 const EMPTY_WEEK_DAYS = [
   { label: "L", value: 0 },
@@ -218,6 +231,55 @@ export async function deleteDailySteps(id: string) {
   if (!deleted) {
     throw Object.assign(new Error("Registro de pasos no encontrado"), { status: 404 });
   }
+}
+
+function parseRankingPeriod(value: unknown): StepsRankingPeriod {
+  if (value === "month") return "month";
+  return "week";
+}
+
+/** Ranking comunitario de pasos por semana o mes calendario. */
+export async function getStepsRanking(
+  periodInput: unknown,
+  refDate = new Date(),
+): Promise<StepsRankingEntry[]> {
+  const period = parseRankingPeriod(periodInput);
+  const [clients, allRecords] = await Promise.all([
+    clientRepository.findAllClients(),
+    dailyStepsRepository.findAllDailySteps(),
+  ]);
+
+  const recordsByClient = new Map<string, typeof allRecords>();
+  for (const record of allRecords) {
+    const clientId =
+      record.clientId instanceof ObjectId
+        ? record.clientId.toHexString()
+        : String(record.clientId);
+    const list = recordsByClient.get(clientId) ?? [];
+    list.push(record);
+    recordsByClient.set(clientId, list);
+  }
+
+  const daysForAvg = getElapsedDaysInPeriod(period, refDate);
+
+  const entries: StepsRankingEntry[] = clients
+    .map((client) => {
+      const clientId = client._id.toHexString();
+      const records = recordsByClient.get(clientId) ?? [];
+      const steps = sumStepsForPeriod(client.startDate, records, period, refDate);
+
+      return {
+        clientId,
+        fullName: client.fullName,
+        avatar: client.avatar ?? "",
+        steps,
+        avgDaily: Math.round(steps / Math.max(1, daysForAvg)),
+      };
+    })
+    .filter((entry) => entry.steps > 0)
+    .sort((a, b) => b.steps - a.steps);
+
+  return entries;
 }
 
 /** Inserta pasos demo para el primer cliente si la colección está vacía. */

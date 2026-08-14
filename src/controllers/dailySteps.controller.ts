@@ -20,6 +20,17 @@ function sendServiceError(err: unknown, res: Response, next: NextFunction) {
   next(err);
 }
 
+/** GET /api/daily-steps/ranking?period=week|month */
+export async function getStepsRanking(req: Request, res: Response, next: NextFunction) {
+  try {
+    const period = typeof req.query.period === "string" ? req.query.period : "week";
+    const ranking = await dailyStepsService.getStepsRanking(period);
+    res.json(ranking);
+  } catch (err) {
+    sendServiceError(err, res, next);
+  }
+}
+
 /** GET /api/daily-steps?clientId=... */
 export async function listDailySteps(req: Request, res: Response, next: NextFunction) {
   try {
