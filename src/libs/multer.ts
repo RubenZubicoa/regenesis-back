@@ -21,7 +21,9 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
+    const allowed =
+      file.mimetype.startsWith("image/") || file.mimetype === "application/octet-stream";
+    if (allowed) {
       cb(null, true);
     } else {
       cb(new Error("Solo se permiten imágenes"));

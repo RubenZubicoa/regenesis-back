@@ -1,5 +1,4 @@
 import cloudinary from 'cloudinary';
-import type { Multer } from 'multer';
 
 export async function uploadToCloudinary(file: Express.Multer.File) {
 
