@@ -36,6 +36,16 @@ function parseKind(value: unknown): SocialFeedKind | undefined {
   return VALID_KINDS.includes(kind as SocialFeedKind) ? (kind as SocialFeedKind) : undefined;
 }
 
+/** GET /api/social-feed/stats */
+export async function getCommunityStats(req: Request, res: Response, next: NextFunction) {
+  try {
+    const stats = await socialFeedService.getCommunityStats();
+    res.json(stats);
+  } catch (err) {
+    sendServiceError(err, res, next);
+  }
+}
+
 /** GET /api/social-feed?kind=workout&limit=50 */
 export async function listSocialFeed(req: Request, res: Response, next: NextFunction) {
   try {

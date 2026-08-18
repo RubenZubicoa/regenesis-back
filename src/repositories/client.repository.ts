@@ -16,6 +16,10 @@ export async function findAllClients(): Promise<WithId<Client>[]> {
   return collection().find().sort({ fullName: 1 }).toArray();
 }
 
+export async function countClients(): Promise<number> {
+  return collection().countDocuments();
+}
+
 export async function findClientById(id: string): Promise<WithId<Client> | null> {
   if (!ObjectId.isValid(id)) return null;
   return collection().findOne({ _id: new ObjectId(id) });

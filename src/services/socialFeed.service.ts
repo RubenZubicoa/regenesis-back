@@ -14,6 +14,16 @@ import type { Wellness } from "../entities/Wellness";
 import type { WellnessMaster } from "../entities/WellnessMaster";
 import type { WorkoutHistory } from "../entities/WorkoutHistory";
 import * as socialFeedRepository from "../repositories/socialFeed.repository";
+import * as clientRepository from "../repositories/client.repository";
+import * as workoutHistoryRepository from "../repositories/workoutHistory.repository";
+import * as dailyStepsRepository from "../repositories/dailySteps.repository";
+import { startOfCalendarWeek, sumStepsForPeriod } from "../utils/stepsRanking";
+
+export type CommunityStats = {
+  activeMembers: number;
+  weeklyWorkouts: number;
+  weeklySteps: number;
+};
 
 function oidToString(value: ObjectId | string): string {
   return value instanceof ObjectId ? value.toHexString() : String(value);
@@ -291,4 +301,43 @@ export async function seedDemoSocialFeedIfEmpty() {
   if (count > 0) return;
 
   console.log("SocialFeed: sin seed automático (se publica al compartir logros)");
+}
+
+function formatIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Resumen numérico para la cabecera de Comunidad. */
+export async function getCommunityStats(refDate = new Date()): Promise<CommunityStats> {
+  const weekStartIso = formatIsoDate(startOfCalendarWeek(refDate));
+
+  const [activeMembers, weeklyWorkouts, clients, allStepsRecords] = await Promise.all([
+    clientRepository.countClients(),
+    workoutHistoryRepository.countWorkoutsSinceDate(weekStartIso),
+    clientRepository.findAllClients(),
+    dailyStepsRepository.findAllDailySteps(),
+  ]);
+
+  const recordsByClient = new Map<string, typeof allStepsRecords>();
+  for (const record of allStepsRecords) {
+    const clientId =
+      record.clientId instanceof ObjectId
+        ? record.clientId.toHexString()
+        : String(record.clientId);
+    const list = recordsByClient.get(clientId) ?? [];
+    list.push(record);
+    recordsByClient.set(clientId, list);
+  }
+
+  let weeklySteps = 0;
+  for (const client of clients) {
+    const clientId = client._id.toHexString();
+    const records = recordsByClient.get(clientId) ?? [];
+    weeklySteps += sumStepsForPeriod(client.startDate, records, "week", refDate);
+  }
+
+  return { activeMembers, weeklyWorkouts, weeklySteps };
 }

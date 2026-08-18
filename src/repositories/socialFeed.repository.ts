@@ -101,3 +101,12 @@ export async function deleteSocialFeedById(id: string): Promise<boolean> {
 export async function countSocialFeed(): Promise<number> {
   return collection().countDocuments();
 }
+
+export async function findSocialFeedSince(
+  since: Date,
+): Promise<WithId<SocialFeedEntry>[]> {
+  return collection()
+    .find({ createdAt: { $gte: since } })
+    .sort({ createdAt: -1 })
+    .toArray();
+}

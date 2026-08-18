@@ -91,3 +91,8 @@ export async function deleteWorkoutHistoryById(id: string): Promise<boolean> {
   const result = await collection().deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount === 1;
 }
+
+/** Cuenta entrenos con fecha >= `fromDate` (ISO YYYY-MM-DD). */
+export async function countWorkoutsSinceDate(fromDate: string): Promise<number> {
+  return collection().countDocuments({ date: { $gte: fromDate } });
+}
