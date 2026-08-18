@@ -20,6 +20,7 @@ import exerciseMasterRoutes from './routes/exerciseMaster.routes';
 import workoutHistoryRoutes from './routes/workoutHistory.routes';
 import socialFeedRoutes from './routes/socialFeed.routes';
 import reviewRoutes from './routes/review.routes';
+import progressImageRoutes from './routes/progressImage.routes';
 
 const server: Application = express();
 
@@ -58,6 +59,7 @@ server.use("/api/routine-days", routineDayRoutes);
 server.use("/api/workout-history", workoutHistoryRoutes);
 server.use("/api/social-feed", socialFeedRoutes);
 server.use("/api/reviews", reviewRoutes);
+server.use("/api/progress-images", progressImageRoutes);
 
 server.use(errorMiddleware);
 
