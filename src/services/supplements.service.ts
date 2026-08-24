@@ -47,6 +47,7 @@ function assertElements(value: unknown): SupplementElement[] {
     const dose = String(item.dose ?? "").trim();
     const when = String(item.when ?? "").trim();
     const icon = String(item.icon ?? "flask-outline").trim();
+    const purchaseLink = String(item.purchaseLink ?? "").trim();
 
     if (!name) {
       throw Object.assign(new Error(`elements[${index}].name es obligatorio`), {
@@ -64,7 +65,13 @@ function assertElements(value: unknown): SupplementElement[] {
       });
     }
 
-    return { name, dose, when, icon };
+    return {
+      name,
+      dose,
+      when,
+      icon,
+      ...(purchaseLink ? { purchaseLink } : {}),
+    };
   });
 }
 

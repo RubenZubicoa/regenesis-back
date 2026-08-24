@@ -7,6 +7,8 @@ export interface SupplementElement {
   dose: string;
   when: string;
   icon: string;
+  /** Enlace opcional para sugerir la compra del producto. */
+  purchaseLink?: string;
 }
 
 export interface Supplements {
