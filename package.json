@@ -20,6 +20,7 @@
     "@types/mongodb": "^4.0.6",
     "@types/mongoose": "^5.11.96",
     "@types/morgan": "^1.9.10",
+    "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -30,6 +31,7 @@
     "multer": "^2.2.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/multer": "^2.2.0",
     "@types/node": "^22.15.0",
     "tsx": "^4.23.1",

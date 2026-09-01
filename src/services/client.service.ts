@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 
 import type { CreateClientInput, UpdateClientInput } from "../entities/Client";
 import { toPublicClient } from "../entities/Client";
+import { comparePassword, hashPassword } from "../libs/bcrypt";
 import * as clientRepository from "../repositories/client.repository";
 import * as programRepository from "../repositories/program.repository";
 import { getCurrentWeek, getTotalWeeks } from "../utils/programProgress";
@@ -68,7 +69,7 @@ export async function loginClient(email: string, contraseña: string) {
   }
 
   const client = await clientRepository.findClientByEmail(email);
-  if (!client || client.contraseña !== contraseña) {
+  if (!client || !(await comparePassword(contraseña, client.contraseña))) {
     throw Object.assign(new Error("Correo o contraseña incorrectos"), { status: 401 });
   }
 
@@ -91,7 +92,7 @@ export async function createClient(body: Partial<CreateClientInput> & { program?
     fullName: body.fullName!,
     email: body.email!,
     telefono: body.telefono!,
-    contraseña: body.contraseña!,
+    contraseña: await hashPassword(body.contraseña!),
     goal: body.goal!,
     coach: body.coach!,
     plan: body.plan!,
@@ -123,6 +124,11 @@ export async function updateClient(id: string, body: UpdateClientInput & { progr
   }
 
   const update: UpdateClientInput = { ...body };
+  if (typeof body.contraseña === "string" && body.contraseña.length > 0) {
+    update.contraseña = await hashPassword(body.contraseña);
+  } else {
+    delete update.contraseña;
+  }
   if (body.program !== undefined) {
     const programId = parseProgramId(body.program);
     await assertProgramExists(programId);
