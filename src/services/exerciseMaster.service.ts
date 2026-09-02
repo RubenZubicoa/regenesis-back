@@ -1,8 +1,12 @@
+import { ObjectId } from "mongodb";
+
+import type { ExerciseCategory } from "../entities/ExerciseCategory";
 import type {
   CreateExerciseMasterInput,
   ExerciseType,
   UpdateExerciseMasterInput,
 } from "../entities/ExerciseMaster";
+import * as exerciseCategoryRepository from "../repositories/exerciseCategory.repository";
 import * as exerciseMasterRepository from "../repositories/exerciseMaster.repository";
 
 const REQUIRED_FIELDS: (keyof CreateExerciseMasterInput)[] = ["name", "type"];
@@ -28,6 +32,55 @@ function assertExerciseType(value: unknown): ExerciseType {
     throw Object.assign(new Error('type debe ser "strength" o "cardio"'), { status: 400 });
   }
   return type;
+}
+
+async function resolveCategory(value: unknown): Promise<ExerciseCategory> {
+  if (value instanceof ObjectId) {
+    return assertCategoryById(value.toHexString());
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw Object.assign(new Error("category inválida"), { status: 400 });
+    }
+    if (ObjectId.isValid(trimmed)) {
+      return assertCategoryById(trimmed);
+    }
+    return assertCategoryByKey(trimmed);
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, unknown>;
+    const rawId = obj._id ?? obj.id;
+    if (rawId instanceof ObjectId) {
+      return assertCategoryById(rawId.toHexString());
+    }
+    if (typeof rawId === "string" && ObjectId.isValid(rawId.trim())) {
+      return assertCategoryById(rawId.trim());
+    }
+    if (typeof obj.key === "string" && obj.key.trim()) {
+      return assertCategoryByKey(obj.key);
+    }
+  }
+
+  throw Object.assign(new Error("category inválida"), { status: 400 });
+}
+
+async function assertCategoryById(id: string): Promise<ExerciseCategory> {
+  const category = await exerciseCategoryRepository.findExerciseCategoryById(id);
+  if (!category) {
+    throw Object.assign(new Error("Categoría no encontrada"), { status: 400 });
+  }
+  return category;
+}
+
+async function assertCategoryByKey(key: string): Promise<ExerciseCategory> {
+  const category = await exerciseCategoryRepository.findExerciseCategoryByKey(key);
+  if (!category) {
+    throw Object.assign(new Error("Categoría no encontrada"), { status: 400 });
+  }
+  return category;
 }
 
 export const DEMO_EXERCISE_MASTERS: CreateExerciseMasterInput[] = [
@@ -169,11 +222,17 @@ export async function createExerciseMaster(
     throw Object.assign(new Error("Ya existe un ejercicio con ese nombre"), { status: 409 });
   }
 
+  const category =
+    body.category !== undefined && body.category !== null && body.category !== ""
+      ? await resolveCategory(body.category)
+      : undefined;
+
   return exerciseMasterRepository.insertExerciseMaster({
     name,
     type,
     ...(body.imageUrl ? { imageUrl: String(body.imageUrl).trim() } : {}),
     ...(body.explanation ? { explanation: String(body.explanation).trim() } : {}),
+    ...(category ? { category } : {}),
   });
 }
 
@@ -210,6 +269,14 @@ export async function updateExerciseMaster(
 
   if (body.explanation !== undefined) {
     update.explanation = String(body.explanation ?? "").trim() || undefined;
+  }
+
+  if (body.category !== undefined) {
+    if (body.category === null || body.category === "") {
+      update.category = undefined;
+    } else {
+      update.category = await resolveCategory(body.category);
+    }
   }
 
   const updated = await exerciseMasterRepository.updateExerciseMasterById(id, update);

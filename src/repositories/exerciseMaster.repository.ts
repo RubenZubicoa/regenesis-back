@@ -52,6 +52,7 @@ export async function insertExerciseMaster(
     type: data.type,
     ...(data.imageUrl ? { imageUrl: data.imageUrl.trim() } : {}),
     ...(data.explanation ? { explanation: data.explanation.trim() } : {}),
+    ...(data.category ? { category: data.category } : {}),
   };
   await collection().insertOne(doc);
   return doc;
@@ -67,6 +68,7 @@ export async function insertManyExerciseMasters(
     type: data.type,
     ...(data.imageUrl ? { imageUrl: data.imageUrl.trim() } : {}),
     ...(data.explanation ? { explanation: data.explanation.trim() } : {}),
+    ...(data.category ? { category: data.category } : {}),
   }));
   if (docs.length === 0) return [];
   await collection().insertMany(docs);
@@ -84,9 +86,18 @@ export async function updateExerciseMasterById(
   if (typeof update.imageUrl === "string") update.imageUrl = update.imageUrl.trim();
   if (typeof update.explanation === "string") update.explanation = update.explanation.trim();
 
+  const unset: Record<string, ""> = {};
+  if ("category" in data && data.category === undefined) {
+    delete update.category;
+    unset.category = "";
+  }
+
   const result = await collection().findOneAndUpdate(
     { _id: new ObjectId(id) },
-    { $set: update },
+    {
+      ...(Object.keys(update).length > 0 ? { $set: update } : {}),
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    },
     { returnDocument: "after" },
   );
 

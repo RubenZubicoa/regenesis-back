@@ -1,5 +1,6 @@
 import { ObjectId, type WithId } from "mongodb";
 
+import type { ExerciseCategory } from "../entities/ExerciseCategory";
 import type { ExerciseMaster, ExerciseType } from "../entities/ExerciseMaster";
 import type {
   CreateRoutineDayInput,
@@ -28,6 +29,7 @@ export type HydratedRoutineExercise = RoutineExercise & {
   type: ExerciseType;
   imageUrl?: string;
   explanation?: string;
+  category?: ExerciseCategory;
 };
 
 export type HydratedRoutineDay = Omit<WithId<RoutineDay>, "exercises"> & {
@@ -183,6 +185,7 @@ function hydrateExercise(
     type: master?.type ?? "strength",
     ...(master?.imageUrl ? { imageUrl: master.imageUrl } : {}),
     ...(master?.explanation ? { explanation: master.explanation } : {}),
+    ...(master?.category ? { category: master.category } : {}),
   };
 }
 

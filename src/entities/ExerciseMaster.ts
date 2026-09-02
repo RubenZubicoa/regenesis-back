@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { ExerciseCategory } from "./ExerciseCategory";
 
 export const EXERCISE_MASTER_COLLECTION = "ExerciseMaster";
 
@@ -13,6 +14,7 @@ export interface ExerciseMaster {
   imageUrl?: string;
   /** Explicación técnica de ejecución. */
   explanation?: string;
+  category?: ExerciseCategory;
 }
 
 /** Datos para crear un ejercicio maestro (sin `_id`). */
