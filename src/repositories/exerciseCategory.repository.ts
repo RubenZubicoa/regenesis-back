@@ -31,6 +31,19 @@ export async function findExerciseCategoryByKey(
   return collection().findOne({ key: trimmed.toLowerCase() });
 }
 
+export async function findExerciseCategoriesByIds(
+  ids: Array<string | ObjectId>,
+): Promise<WithId<ExerciseCategory>[]> {
+  const objectIds = ids
+    .map((id) => (id instanceof ObjectId ? id : ObjectId.isValid(id) ? new ObjectId(id) : null))
+    .filter((id): id is ObjectId => id !== null);
+
+  if (objectIds.length === 0) return [];
+  return collection()
+    .find({ _id: { $in: objectIds } })
+    .toArray();
+}
+
 export async function insertExerciseCategory(
   data: CreateExerciseCategoryInput,
 ): Promise<WithId<ExerciseCategory>> {
