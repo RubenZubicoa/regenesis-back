@@ -34,6 +34,10 @@ function assertExerciseType(value: unknown): ExerciseType {
   return type;
 }
 
+function hasCategoryValue(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== "";
+}
+
 async function resolveCategory(value: unknown): Promise<ExerciseCategory> {
   if (value instanceof ObjectId) {
     return assertCategoryById(value.toHexString());
@@ -222,10 +226,8 @@ export async function createExerciseMaster(
     throw Object.assign(new Error("Ya existe un ejercicio con ese nombre"), { status: 409 });
   }
 
-  const category =
-    body.category !== undefined && body.category !== null && body.category !== ""
-      ? await resolveCategory(body.category)
-      : undefined;
+  const rawCategory = (body as Record<string, unknown>).category;
+  const category = hasCategoryValue(rawCategory) ? await resolveCategory(rawCategory) : undefined;
 
   return exerciseMasterRepository.insertExerciseMaster({
     name,
@@ -271,11 +273,12 @@ export async function updateExerciseMaster(
     update.explanation = String(body.explanation ?? "").trim() || undefined;
   }
 
-  if (body.category !== undefined) {
-    if (body.category === null || body.category === "") {
+  const rawCategory = (body as Record<string, unknown>).category;
+  if (rawCategory !== undefined) {
+    if (!hasCategoryValue(rawCategory)) {
       update.category = undefined;
     } else {
-      update.category = await resolveCategory(body.category);
+      update.category = await resolveCategory(rawCategory);
     }
   }
 
