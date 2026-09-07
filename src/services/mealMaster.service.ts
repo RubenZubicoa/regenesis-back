@@ -5,14 +5,14 @@ import type {
 } from "../entities/MealMaster";
 import * as mealMasterRepository from "../repositories/mealMaster.repository";
 
-const REQUIRED_FIELDS: (keyof CreateMealMasterInput)[] = ["slots"];
+const REQUIRED_FIELDS: (keyof CreateMealMasterInput)[] = ["nombre", "slots"];
 
 function assertCreatePayload(
   body: Partial<CreateMealMasterInput> & Record<string, unknown>,
 ): void {
   const missing = REQUIRED_FIELDS.filter((field) => {
     const value = body[field];
-    return value === undefined || value === null;
+    return value === undefined || value === null || value === "";
   });
 
   if (missing.length > 0) {
@@ -118,7 +118,17 @@ export async function createMealMaster(
 ) {
   assertCreatePayload(body);
 
+  const nombre = String(body.nombre).trim();
+  const existing = await mealMasterRepository.findMealMasterByNombre(nombre);
+  if (existing) {
+    throw Object.assign(new Error("Ya existe un plan de comidas maestro con ese nombre"), {
+      status: 409,
+    });
+  }
+
   return mealMasterRepository.insertMealMaster({
+    nombre,
+    descripcion: String(body.descripcion ?? "").trim(),
     slots: assertSlots(body.slots),
   });
 }
@@ -133,6 +143,27 @@ export async function updateMealMaster(
   }
 
   const update: UpdateMealMasterInput = {};
+
+  if (body.nombre !== undefined) {
+    const nombre = String(body.nombre).trim();
+    if (!nombre) {
+      throw Object.assign(new Error("nombre no puede estar vacío"), { status: 400 });
+    }
+    if (nombre.toLowerCase() !== (current.nombre ?? "").toLowerCase()) {
+      const existing = await mealMasterRepository.findMealMasterByNombre(nombre);
+      if (existing) {
+        throw Object.assign(new Error("Ya existe un plan de comidas maestro con ese nombre"), {
+          status: 409,
+        });
+      }
+    }
+    update.nombre = nombre;
+  }
+
+  if (body.descripcion !== undefined) {
+    update.descripcion = String(body.descripcion ?? "").trim();
+  }
+
   if (body.slots !== undefined) {
     update.slots = assertSlots(body.slots);
   }

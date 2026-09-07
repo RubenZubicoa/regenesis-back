@@ -1,6 +1,9 @@
 import { Meal } from "./Meal";
 
-export type MealMaster = Omit<Meal, "clientId">;
+export type MealMaster = Omit<Meal, "clientId"> & {
+  nombre: string;
+  descripcion: string;
+};
 
 export const MEAL_MASTER_COLLECTION = "MealMaster";
 
