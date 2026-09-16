@@ -50,7 +50,7 @@ export async function loginClient(req: Request, res: Response, next: NextFunctio
 
 export async function createClient(req: Request, res: Response, next: NextFunction) {
   try {
-    const client = await clientService.createClient(req.body);
+    const client = await clientService.createClient(req.body, req.file);
     res.status(201).json(client);
   } catch (err) {
     sendServiceError(err, res, next);
@@ -59,7 +59,7 @@ export async function createClient(req: Request, res: Response, next: NextFuncti
 
 export async function updateClient(req: Request, res: Response, next: NextFunction) {
   try {
-    const client = await clientService.updateClient(req.params.id as string, req.body);
+    const client = await clientService.updateClient(req.params.id as string, req.body, req.file);
     res.json(client);
   } catch (err) {
     sendServiceError(err, res, next);

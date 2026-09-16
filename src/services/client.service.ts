@@ -1,8 +1,10 @@
 import { ObjectId } from "mongodb";
+import fs from "fs";
 
 import type { CreateClientInput, UpdateClientInput } from "../entities/Client";
 import { toPublicClient } from "../entities/Client";
 import { comparePassword, hashPassword } from "../libs/bcrypt";
+import { uploadToCloudinary } from "../libs/cloudinary";
 import * as clientRepository from "../repositories/client.repository";
 import * as programRepository from "../repositories/program.repository";
 import { getCurrentWeek, getTotalWeeks } from "../utils/programProgress";
@@ -50,6 +52,39 @@ async function assertProgramExists(programId: ObjectId) {
   return program;
 }
 
+function cleanTempFile(path?: string) {
+  if (!path) return;
+  fs.unlink(path, () => undefined);
+}
+
+/** Sube el fichero a Cloudinary o usa una URL ya enviada en el body. */
+async function resolveAvatarUrl(
+  file?: Express.Multer.File,
+  fallback?: unknown,
+): Promise<string | undefined> {
+  if (file) {
+    try {
+      const secureUrl = await uploadToCloudinary(file);
+      if (!secureUrl) {
+        throw Object.assign(new Error("Cloudinary no devolvió una URL"), { status: 502 });
+      }
+      return secureUrl;
+    } catch (err) {
+      throw Object.assign(
+        new Error(`Error al subir la imagen: ${err instanceof Error ? err.message : err}`),
+        { status: 502 },
+      );
+    } finally {
+      cleanTempFile(file.path);
+    }
+  }
+
+  if (typeof fallback === "string" && fallback.trim()) {
+    return fallback.trim();
+  }
+  return undefined;
+}
+
 export async function listClients() {
   const clients = await clientRepository.findAllClients();
   return clients.map(toPublicClient);
@@ -76,7 +111,10 @@ export async function loginClient(email: string, contraseña: string) {
   return toPublicClient(client);
 }
 
-export async function createClient(body: Partial<CreateClientInput> & { program?: unknown }) {
+export async function createClient(
+  body: Partial<CreateClientInput> & { program?: unknown },
+  file?: Express.Multer.File,
+) {
   assertCreatePayload(body as Partial<CreateClientInput>);
 
   const existing = await clientRepository.findClientByEmail(body.email!);
@@ -86,6 +124,8 @@ export async function createClient(body: Partial<CreateClientInput> & { program?
 
   const programId = parseProgramId(body.program);
   await assertProgramExists(programId);
+
+  const avatar = (await resolveAvatarUrl(file, body.avatar)) ?? "";
 
   const payload: CreateClientInput = {
     name: body.name!,
@@ -103,14 +143,18 @@ export async function createClient(body: Partial<CreateClientInput> & { program?
     totalWeeks: getTotalWeeks(body.startDate!, body.endDate!),
     phase: body.phase ?? 1,
     totalPhases: body.totalPhases ?? 3,
-    avatar: body.avatar ?? "",
+    avatar,
   };
 
   const created = await clientRepository.insertClient(payload);
   return toPublicClient(created);
 }
 
-export async function updateClient(id: string, body: UpdateClientInput & { program?: unknown }) {
+export async function updateClient(
+  id: string,
+  body: UpdateClientInput & { program?: unknown },
+  file?: Express.Multer.File,
+) {
   const current = await clientRepository.findClientById(id);
   if (!current) {
     throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
@@ -124,6 +168,7 @@ export async function updateClient(id: string, body: UpdateClientInput & { progr
   }
 
   const update: UpdateClientInput = { ...body };
+  delete update.avatar;
   if (typeof body.contraseña === "string" && body.contraseña.length > 0) {
     update.contraseña = await hashPassword(body.contraseña);
   } else {
@@ -141,6 +186,11 @@ export async function updateClient(id: string, body: UpdateClientInput & { progr
   const nextEnd = String(update.endDate ?? current.endDate);
   update.week = getCurrentWeek(nextStart, nextEnd);
   update.totalWeeks = getTotalWeeks(nextStart, nextEnd);
+
+  const avatar = await resolveAvatarUrl(file, body.avatar);
+  if (avatar !== undefined) {
+    update.avatar = avatar;
+  }
 
   const updated = await clientRepository.updateClientById(id, update);
   if (!updated) {
