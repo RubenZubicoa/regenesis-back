@@ -1,10 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { verifyToken } from "../libs/jwt";
-
-type JwtPayloadLike = {
-  user?: unknown;
-  [key: string]: unknown;
-};
+import { verifyToken, type AuthTokenPayload } from "../libs/jwt";
 
 function getBearerToken(req: Request): string | null {
   const header = req.header("authorization") || req.header("Authorization");
@@ -21,8 +16,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   }
 
   try {
-    const decoded = verifyToken(token) as JwtPayloadLike;
-    (req as Request & { user?: unknown }).user = decoded?.user ?? decoded;
+    const decoded = verifyToken(token);
+    (req as Request & { user?: AuthTokenPayload }).user = decoded;
     return next();
   } catch {
     return res.status(401).json({ message: "No autenticado: JWT inválido o expirado" });

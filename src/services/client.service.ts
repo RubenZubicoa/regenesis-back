@@ -5,6 +5,7 @@ import type { CreateClientInput, UpdateClientInput } from "../entities/Client";
 import { toPublicClient } from "../entities/Client";
 import { comparePassword, hashPassword } from "../libs/bcrypt";
 import { uploadToCloudinary } from "../libs/cloudinary";
+import { signToken } from "../libs/jwt";
 import * as clientRepository from "../repositories/client.repository";
 import * as programRepository from "../repositories/program.repository";
 import { getCurrentWeek, getTotalWeeks } from "../utils/programProgress";
@@ -108,7 +109,14 @@ export async function loginClient(email: string, contraseña: string) {
     throw Object.assign(new Error("Correo o contraseña incorrectos"), { status: 401 });
   }
 
-  return toPublicClient(client);
+  return {
+    token: signToken({
+      sub: client._id.toHexString(),
+      email: client.email,
+      role: "client",
+    }),
+    client: toPublicClient(client),
+  };
 }
 
 export async function createClient(

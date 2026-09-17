@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { run } from "./db/database";
 import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/client.service";
+import { seedDemoTrainerIfEmpty } from "./services/trainer.service";
 import { seedDemoDailyStepsIfEmpty } from "./services/dailySteps.service";
 import { seedDemoMacrosIfEmpty } from "./services/macros.service";
 import { seedDemoMealsIfEmpty } from "./services/meal.service";
@@ -33,6 +34,7 @@ async function main() {
   await seedDemoWellnessMastersIfEmpty();
   await migrateClientProgramRefs();
   await seedDemoClientIfEmpty();
+  await seedDemoTrainerIfEmpty();
   const migrated = await migrateMeasurementObjectIds();
   if (migrated > 0) {
     console.log(`Medidas migradas a ObjectId: ${migrated}`);

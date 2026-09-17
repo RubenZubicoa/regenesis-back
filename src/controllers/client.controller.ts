@@ -41,8 +41,8 @@ export async function getClient(req: Request, res: Response, next: NextFunction)
 export async function loginClient(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, contraseña, password } = req.body ?? {};
-    const client = await clientService.loginClient(email, contraseña ?? password);
-    res.json(client);
+    const result = await clientService.loginClient(email, contraseña ?? password);
+    res.json(result);
   } catch (err) {
     sendServiceError(err, res, next);
   }

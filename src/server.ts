@@ -3,6 +3,9 @@ import morgan from 'morgan';
 import cors from 'cors';
 
 import { errorMiddleware } from './middlewares/error.middeware';
+import { authMiddleware } from './middlewares/auth.middleware';
+import * as clientController from './controllers/client.controller';
+import * as trainerController from './controllers/trainer.controller';
 import clientRoutes from './routes/client.routes';
 import dailyStepsRoutes from './routes/dailySteps.routes';
 import macrosRoutes from './routes/macros.routes';
@@ -25,6 +28,7 @@ import socialFeedRoutes from './routes/socialFeed.routes';
 import reviewRoutes from './routes/review.routes';
 import progressImageRoutes from './routes/progressImage.routes';
 import videoLibraryRoutes from './routes/videoLibrary.routes';
+import trainerRoutes from './routes/trainer.routes';
 
 const server: Application = express();
 
@@ -45,8 +49,15 @@ server.use((req, res, next) => {
 
 server.use("/uploads", express.static("uploads"));
 
-// public routes
+// Logins públicos: el token se genera aquí, no se exige de antemano
+server.post("/api/clients/login", clientController.loginClient);
+server.post("/api/trainers/login", trainerController.loginTrainer);
+
+server.use("/api", authMiddleware);
+
+// protected routes
 server.use("/api/clients", clientRoutes);
+server.use("/api/trainers", trainerRoutes);
 server.use("/api/programs", programRoutes);
 server.use("/api/measurement-masters", measurementMasterRoutes);
 server.use("/api/measurements", measurementRoutes);
