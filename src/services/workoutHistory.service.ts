@@ -56,17 +56,6 @@ function assertNumber(value: unknown, field: string): number {
   return n;
 }
 
-function assertNonEmptyString(value: unknown, field: string): string {
-  if (value === undefined || value === null) {
-    throw Object.assign(new Error(`${field} es obligatorio`), { status: 400 });
-  }
-  const text = String(value).trim();
-  if (!text) {
-    throw Object.assign(new Error(`${field} debe ser un string no vacío`), { status: 400 });
-  }
-  return text;
-}
-
 function assertExerciseType(value: unknown, index: number): ExerciseType {
   const type = String(value ?? "");
   if (type !== "strength" && type !== "cardio") {
@@ -109,11 +98,16 @@ function assertCardio(value: unknown, index: number): CardioLog {
     throw Object.assign(new Error(`exercises[${index}].cardio inválido`), { status: 400 });
   }
   const item = value as Record<string, unknown>;
-  return {
+  const cardio: CardioLog = {
     km: assertNumber(item.km, `exercises[${index}].cardio.km`),
-    paceMinKm: assertNonEmptyString(item.paceMinKm, `exercises[${index}].cardio.paceMinKm`),
     avgHr: assertNumber(item.avgHr, `exercises[${index}].cardio.avgHr`),
   };
+
+  if (item.paceMinKm !== undefined && item.paceMinKm !== null && String(item.paceMinKm).trim() !== "") {
+    cardio.paceMinKm = String(item.paceMinKm).trim();
+  }
+
+  return cardio;
 }
 
 function assertExercises(value: unknown): ExerciseLog[] {

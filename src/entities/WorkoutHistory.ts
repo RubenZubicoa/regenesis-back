@@ -13,7 +13,7 @@ export type StrengthSetLog = {
 export type CardioLog = {
   km: number;
   /** Ritmo medio en minutos por kilómetro, p. ej. "5:30". */
-  paceMinKm: string;
+  paceMinKm?: string;
   avgHr: number;
 };
 
