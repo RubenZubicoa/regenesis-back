@@ -15,7 +15,7 @@ function collection(): Collection<DailySteps> {
 export async function findAllDailySteps(
   filter: Filter<DailySteps> = {},
 ): Promise<WithId<DailySteps>[]> {
-  return collection().find(filter).sort({ week: -1 }).toArray();
+  return collection().find(filter).sort({ date: -1 }).toArray();
 }
 
 /**
@@ -37,14 +37,14 @@ export async function findDailyStepsById(id: string): Promise<WithId<DailySteps>
   return collection().findOne({ _id: new ObjectId(id) });
 }
 
-export async function findDailyStepsByClientAndWeek(
+export async function findDailyStepsByClientAndDate(
   clientId: string,
-  week: number,
+  date: string,
 ): Promise<WithId<DailySteps> | null> {
   if (!ObjectId.isValid(clientId)) return null;
   const oid = new ObjectId(clientId);
   return collection().findOne({
-    week,
+    date,
     $or: [{ clientId: oid }, { clientId: clientId as unknown as ObjectId }],
   });
 }

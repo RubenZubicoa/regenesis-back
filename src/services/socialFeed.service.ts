@@ -91,10 +91,9 @@ export function serializeSocialFeedEntry(entry: WithId<SocialFeedEntry>): Record
       return {
         ...base,
         dailyStepsId: entry.dailyStepsId.toHexString(),
-        week: entry.week,
-        dayLabel: entry.dayLabel,
+        date: entry.date,
         steps: entry.steps,
-        goal: entry.goal,
+        ...(entry.goal !== undefined ? { goal: entry.goal } : {}),
       };
     case "wellness":
       return {
@@ -220,23 +219,16 @@ export async function publishMeasurement(
 export async function publishSteps(
   client: Pick<Client, "_id" | "fullName" | "avatar">,
   dailySteps: WithId<DailySteps>,
-  input: { dayLabel: string; steps: number },
 ) {
-  const sourceKey = `${dailySteps._id.toHexString()}:${input.dayLabel}`;
-  const sourceId = ObjectId.createFromHexString(
-    createDeterministicObjectIdHex(sourceKey),
-  );
-
   const feedInput: CreateSocialFeedInput = {
     kind: "steps",
     clientId: client._id,
     author: authorFromClient(client),
-    sourceId,
+    sourceId: dailySteps._id,
     dailyStepsId: dailySteps._id,
-    week: dailySteps.week,
-    dayLabel: input.dayLabel,
-    steps: input.steps,
-    goal: dailySteps.goal,
+    date: dailySteps.date,
+    steps: dailySteps.steps,
+    ...(dailySteps.goal !== undefined ? { goal: dailySteps.goal } : {}),
   };
 
   return upsertBySource(feedInput as CreateSocialFeedInput & { sourceId: ObjectId });
@@ -336,7 +328,7 @@ export async function getCommunityStats(refDate = new Date()): Promise<Community
   for (const client of clients) {
     const clientId = client._id.toHexString();
     const records = recordsByClient.get(clientId) ?? [];
-    weeklySteps += sumStepsForPeriod(client.startDate, records, "week", refDate);
+    weeklySteps += sumStepsForPeriod(records, "week", refDate);
   }
 
   return { activeMembers, weeklyWorkouts, weeklySteps };

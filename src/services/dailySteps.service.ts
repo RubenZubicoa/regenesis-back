@@ -2,7 +2,6 @@ import { ObjectId } from "mongodb";
 
 import type {
   CreateDailyStepsInput,
-  Day,
   UpdateDailyStepsInput,
 } from "../entities/DailySteps";
 import * as clientRepository from "../repositories/client.repository";
@@ -14,7 +13,6 @@ import {
   sumStepsForPeriod,
   type StepsRankingPeriod,
 } from "../utils/stepsRanking";
-import { getCurrentWeek } from "../utils/programProgress";
 
 export type StepsRankingEntry = {
   clientId: string;
@@ -24,22 +22,9 @@ export type StepsRankingEntry = {
   avgDaily: number;
 };
 
-const EMPTY_WEEK_DAYS = [
-  { label: "L", value: 0 },
-  { label: "M", value: 0 },
-  { label: "X", value: 0 },
-  { label: "J", value: 0 },
-  { label: "V", value: 0 },
-  { label: "S", value: 0 },
-  { label: "D", value: 0 },
-];
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-const REQUIRED_FIELDS: (keyof CreateDailyStepsInput)[] = [
-  "clientId",
-  "week",
-  "goal",
-  "days",
-];
+const REQUIRED_FIELDS: (keyof CreateDailyStepsInput)[] = ["clientId", "date", "steps"];
 
 function assertCreatePayload(
   body: Partial<CreateDailyStepsInput> & Record<string, unknown>,
@@ -72,28 +57,27 @@ function assertNumber(value: unknown, field: string): number {
   return n;
 }
 
-function assertDays(value: unknown): Day[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw Object.assign(new Error("days debe ser un array no vacío"), { status: 400 });
+function assertIsoDate(value: unknown, field: string): string {
+  const date = String(value ?? "").trim();
+  if (!ISO_DATE.test(date) || Number.isNaN(new Date(`${date}T00:00:00`).getTime())) {
+    throw Object.assign(new Error(`${field} debe ser una fecha ISO (YYYY-MM-DD)`), {
+      status: 400,
+    });
   }
+  return date;
+}
 
-  return value.map((item, index) => {
-    if (!item || typeof item !== "object") {
-      throw Object.assign(new Error(`days[${index}] inválido`), { status: 400 });
-    }
-    const day = item as Record<string, unknown>;
-    const label = String(day.label ?? "");
-    const dayValue = Number(day.value);
-    if (!label) {
-      throw Object.assign(new Error(`days[${index}].label es obligatorio`), { status: 400 });
-    }
-    if (Number.isNaN(dayValue)) {
-      throw Object.assign(new Error(`days[${index}].value debe ser numérico`), {
-        status: 400,
-      });
-    }
-    return { label, value: dayValue };
-  });
+function formatIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
 }
 
 async function assertClientExists(clientId: ObjectId) {
@@ -104,6 +88,20 @@ async function assertClientExists(clientId: ObjectId) {
   return client;
 }
 
+async function assertUniqueClientDate(
+  clientId: string,
+  date: string,
+  excludeId?: string,
+) {
+  const existing = await dailyStepsRepository.findDailyStepsByClientAndDate(clientId, date);
+  if (existing && existing._id.toHexString() !== excludeId) {
+    throw Object.assign(
+      new Error(`El cliente ya tiene un registro de pasos para el ${date}`),
+      { status: 409 },
+    );
+  }
+}
+
 /** Lista pasos. Requiere `clientId` para filtrar por cliente. */
 export async function listDailySteps(clientId?: string) {
   if (!clientId) {
@@ -112,7 +110,7 @@ export async function listDailySteps(clientId?: string) {
   return getDailyStepsByClientId(clientId);
 }
 
-/** Pasos de un cliente concreto. Asegura registro de la semana actual. */
+/** Pasos diarios de un cliente concreto. */
 export async function getDailyStepsByClientId(clientId: string) {
   if (!ObjectId.isValid(clientId)) {
     throw Object.assign(new Error("Id de cliente inválido"), { status: 400 });
@@ -123,22 +121,7 @@ export async function getDailyStepsByClientId(clientId: string) {
     throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
   }
 
-  const currentWeek = getCurrentWeek(client.startDate, client.endDate);
-  let records = await dailyStepsRepository.findDailyStepsByClient(clientId);
-  const hasCurrentWeek = records.some((record) => record.week === currentWeek);
-
-  if (!hasCurrentWeek) {
-    const previous = [...records].sort((a, b) => b.week - a.week)[0];
-    await dailyStepsRepository.insertDailySteps({
-      clientId: client._id,
-      week: currentWeek,
-      goal: previous?.goal ?? 10000,
-      days: EMPTY_WEEK_DAYS.map((day) => ({ ...day })),
-    });
-    records = await dailyStepsRepository.findDailyStepsByClient(clientId);
-  }
-
-  return records;
+  return dailyStepsRepository.findDailyStepsByClient(clientId);
 }
 
 export async function getDailyStepsById(id: string) {
@@ -155,28 +138,28 @@ export async function createDailySteps(
   assertCreatePayload(body);
 
   const clientId = parseObjectId(body.clientId, "cliente");
-  await assertClientExists(clientId);
+  const client = await assertClientExists(clientId);
+  const date = assertIsoDate(body.date, "date");
 
-  const week = assertNumber(body.week, "week");
-  const existing = await dailyStepsRepository.findDailyStepsByClientAndWeek(
-    clientId.toHexString(),
-    week,
-  );
-  if (existing) {
-    throw Object.assign(
-      new Error(`El cliente ya tiene un registro de pasos para la semana ${week}`),
-      { status: 409 },
-    );
-  }
+  await assertUniqueClientDate(clientId.toHexString(), date);
 
   const payload: CreateDailyStepsInput = {
     clientId,
-    week,
-    goal: assertNumber(body.goal, "goal"),
-    days: assertDays(body.days),
+    date,
+    steps: assertNumber(body.steps, "steps"),
   };
 
-  return dailyStepsRepository.insertDailySteps(payload);
+  if (body.goal !== undefined && body.goal !== null && String(body.goal).trim() !== "") {
+    payload.goal = assertNumber(body.goal, "goal");
+  }
+
+  const created = await dailyStepsRepository.insertDailySteps(payload);
+
+  if (parseShareInCommunity(body) && created.steps > 0) {
+    await publishSteps(client, created);
+  }
+
+  return created;
 }
 
 export async function updateDailySteps(
@@ -196,67 +179,39 @@ export async function updateDailySteps(
     update.clientId = clientId;
   }
 
-  if (body.week !== undefined) {
-    update.week = assertNumber(body.week, "week");
+  if (body.date !== undefined) {
+    update.date = assertIsoDate(body.date, "date");
+  }
+
+  if (body.steps !== undefined) {
+    update.steps = assertNumber(body.steps, "steps");
   }
 
   if (body.goal !== undefined) {
     update.goal = assertNumber(body.goal, "goal");
   }
 
-  if (body.days !== undefined) {
-    update.days = assertDays(body.days);
-  }
-
   const nextClientId = (update.clientId ?? current.clientId).toHexString();
-  const nextWeek = update.week ?? current.week;
-  const existing = await dailyStepsRepository.findDailyStepsByClientAndWeek(
-    nextClientId,
-    nextWeek,
-  );
-  if (existing && existing._id.toHexString() !== id) {
-    throw Object.assign(
-      new Error(`El cliente ya tiene un registro de pasos para la semana ${nextWeek}`),
-      { status: 409 },
-    );
-  }
+  const nextDate = update.date ?? current.date;
+  await assertUniqueClientDate(nextClientId, nextDate, id);
 
   const updated = await dailyStepsRepository.updateDailyStepsById(id, update);
   if (!updated) {
     throw Object.assign(new Error("Registro de pasos no encontrado"), { status: 404 });
   }
 
-  if (parseShareInCommunity(body) && update.days) {
-    const changed = findChangedDay(current.days, update.days);
-    if (changed && changed.value > 0) {
-      const clientId =
-        updated.clientId instanceof ObjectId
-          ? updated.clientId.toHexString()
-          : String(updated.clientId);
-      const client = await clientRepository.findClientById(clientId);
-      if (client) {
-        await publishSteps(client, updated, {
-          dayLabel: changed.label,
-          steps: changed.value,
-        });
-      }
+  if (parseShareInCommunity(body) && updated.steps > 0) {
+    const clientId =
+      updated.clientId instanceof ObjectId
+        ? updated.clientId.toHexString()
+        : String(updated.clientId);
+    const client = await clientRepository.findClientById(clientId);
+    if (client) {
+      await publishSteps(client, updated);
     }
   }
 
   return updated;
-}
-
-function findChangedDay(
-  before: Day[],
-  after: Day[],
-): { label: string; value: number } | null {
-  for (let index = 0; index < after.length; index += 1) {
-    const next = after[index];
-    const prev = before[index];
-    if (!next || prev?.value === next.value) continue;
-    return { label: next.label, value: next.value };
-  }
-  return null;
 }
 
 export async function deleteDailySteps(id: string) {
@@ -299,7 +254,7 @@ export async function getStepsRanking(
     .map((client) => {
       const clientId = client._id.toHexString();
       const records = recordsByClient.get(clientId) ?? [];
-      const steps = sumStepsForPeriod(client.startDate, records, period, refDate);
+      const steps = sumStepsForPeriod(records, period, refDate);
 
       return {
         clientId,
@@ -327,20 +282,18 @@ export async function seedDemoDailyStepsIfEmpty() {
     return;
   }
 
-  await dailyStepsRepository.insertDailySteps({
-    clientId: client._id,
-    week: getCurrentWeek(client.startDate, client.endDate),
-    goal: 10000,
-    days: [
-      { label: "L", value: 11240 },
-      { label: "M", value: 9850 },
-      { label: "X", value: 10320 },
-      { label: "J", value: 8760 },
-      { label: "V", value: 8420 },
-      { label: "S", value: 0 },
-      { label: "D", value: 0 },
-    ],
-  });
+  const demoSteps = [11240, 9850, 10320, 8760, 8420];
+  const today = new Date();
+
+  for (let index = 0; index < demoSteps.length; index += 1) {
+    const date = formatIsoDate(addDays(today, index - (demoSteps.length - 1)));
+    await dailyStepsRepository.insertDailySteps({
+      clientId: client._id,
+      date,
+      steps: demoSteps[index] ?? 0,
+      goal: 10000,
+    });
+  }
 
   console.log(`Pasos diarios demo creados para cliente ${client.email}`);
 }

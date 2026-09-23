@@ -74,39 +74,17 @@ function isWithinPeriod(dayDate: Date, period: StepsRankingPeriod, refDate: Date
   return dayDate >= start && dayDate <= end;
 }
 
-/** Fecha calendario de un día L–D dentro de una semana del programa. */
-export function getProgramDayDate(
-  startDate: string,
-  programWeek: number,
-  dayIndex: number,
-): Date | null {
-  const programStart = parseDay(startDate);
-  if (Number.isNaN(programStart.getTime())) return null;
-
-  const weekStart = new Date(programStart);
-  weekStart.setDate(weekStart.getDate() + (programWeek - 1) * 7);
-
-  const dayDate = new Date(weekStart);
-  dayDate.setDate(dayDate.getDate() + dayIndex);
-  return startOfDay(dayDate);
-}
-
 export function sumStepsForPeriod(
-  startDate: string,
   records: WithId<DailySteps>[],
   period: StepsRankingPeriod,
   refDate = new Date(),
 ): number {
-  if (!startDate) return 0;
-
   let total = 0;
 
   for (const record of records) {
-    record.days.forEach((day, dayIndex) => {
-      const dayDate = getProgramDayDate(startDate, record.week, dayIndex);
-      if (!dayDate || !isWithinPeriod(dayDate, period, refDate)) return;
-      total += Math.max(0, Number(day.value) || 0);
-    });
+    const dayDate = parseDay(record.date);
+    if (Number.isNaN(dayDate.getTime()) || !isWithinPeriod(dayDate, period, refDate)) continue;
+    total += Math.max(0, Number(record.steps) || 0);
   }
 
   return total;

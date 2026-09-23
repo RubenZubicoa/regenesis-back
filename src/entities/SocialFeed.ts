@@ -65,10 +65,9 @@ export type SocialFeedMeasurement = SocialFeedBase & {
 export type SocialFeedSteps = SocialFeedBase & {
   kind: "steps";
   dailyStepsId: ObjectId;
-  week: number;
-  dayLabel: string;
+  date: string;
   steps: number;
-  goal: number;
+  goal?: number;
 };
 
 export type SocialFeedWellnessItem = {

@@ -12,8 +12,6 @@ import { PROGRAM_COLLECTION } from "../src/entities/Program";
 import { getCurrentWeek } from "../src/utils/programProgress";
 import { startOfCalendarMonth, startOfCalendarWeek } from "../src/utils/stepsRanking";
 
-const DAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"] as const;
-
 const DEMO_CLIENTS = [
   {
     name: "Ana",
@@ -65,11 +63,28 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
-function buildDays(values: number[]) {
-  return DAY_LABELS.map((label, index) => ({
-    label,
-    value: Math.max(0, Math.round(values[index] ?? 0)),
-  }));
+async function upsertDailySteps(
+  stepsCol: ReturnType<typeof database.collection>,
+  clientId: ObjectId,
+  date: string,
+  steps: number,
+) {
+  const existing = await stepsCol.findOne({
+    date,
+    $or: [{ clientId }, { clientId: clientId.toHexString() as unknown as ObjectId }],
+  });
+
+  if (existing) {
+    await stepsCol.updateOne({ _id: existing._id }, { $set: { date, steps, goal: 10000, clientId } });
+  } else {
+    await stepsCol.insertOne({
+      _id: new ObjectId(),
+      clientId,
+      date,
+      steps,
+      goal: 10000,
+    });
+  }
 }
 
 async function main() {
@@ -143,32 +158,16 @@ async function main() {
     for (let week = 1; week <= currentProgramWeek; week += 1) {
       const weekOffset = (week - 1) * 7;
       const factor = 0.85 + week * 0.05;
-      const days = buildDays(
-        demo.weekSteps.map((value, dayIndex) => {
-          const dayDate = addDays(monthStart, weekOffset + dayIndex);
-          if (dayDate > today) return 0;
-          return Math.round(value * factor);
-        }),
-      );
 
-      const existing = await stepsCol.findOne({
-        week,
-        $or: [{ clientId }, { clientId: clientId.toHexString() as unknown as ObjectId }],
-      });
+      for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+        const dayDate = addDays(monthStart, weekOffset + dayIndex);
+        if (dayDate > today) continue;
 
-      if (existing) {
-        await stepsCol.updateOne({ _id: existing._id }, { $set: { days, goal: 10000, clientId } });
-      } else {
-        await stepsCol.insertOne({
-          _id: new ObjectId(),
-          clientId,
-          week,
-          goal: 10000,
-          days,
-        });
+        const raw = demo.weekSteps[dayIndex] ?? 0;
+        const steps = Math.max(0, Math.round(raw * factor));
+        await upsertDailySteps(stepsCol, clientId, formatDate(dayDate), steps);
+        stepsUpserted += 1;
       }
-
-      stepsUpserted += 1;
     }
   }
 
@@ -176,35 +175,17 @@ async function main() {
   const existingClients = await clientsCol.find({ email: { $nin: DEMO_CLIENTS.map((c) => c.email) } }).toArray();
   for (const client of existingClients) {
     const clientId = client._id as ObjectId;
-    const clientStart = String(client.startDate ?? startDate);
-    const clientEnd = String(client.endDate ?? endDate);
-    const week = getCurrentWeek(clientStart, clientEnd, today);
+    const fallbackSteps = [11240, 9850, 10320, 8760, 8420, 0, 0];
 
-    const days = buildDays([11240, 9850, 10320, 8760, 8420, 0, 0].map((value, dayIndex) => {
-      const programWeekStart = addDays(new Date(`${clientStart}T00:00:00`), (week - 1) * 7);
-      const dayDate = addDays(programWeekStart, dayIndex);
-      if (dayDate > today) return 0;
-      return value;
-    }));
+    for (let dayIndex = 0; dayIndex < fallbackSteps.length; dayIndex += 1) {
+      const dayDate = addDays(weekStart, dayIndex);
+      if (dayDate > today) continue;
 
-    const existing = await stepsCol.findOne({
-      week,
-      $or: [{ clientId }, { clientId: clientId.toHexString() as unknown as ObjectId }],
-    });
-
-    if (existing) {
-      await stepsCol.updateOne({ _id: existing._id }, { $set: { days, goal: 10000, clientId } });
-    } else {
-      await stepsCol.insertOne({
-        _id: new ObjectId(),
-        clientId,
-        week,
-        goal: 10000,
-        days,
-      });
+      const steps = fallbackSteps[dayIndex] ?? 0;
+      await upsertDailySteps(stepsCol, clientId, formatDate(dayDate), steps);
+      stepsUpserted += 1;
     }
 
-    stepsUpserted += 1;
     console.log(`Pasos actualizados para ${client.fullName ?? client.email}`);
   }
 
