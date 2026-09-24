@@ -1,25 +1,7 @@
 import "dotenv/config";
 import { run } from "./db/database";
-import { migrateClientProgramRefs, seedDemoClientIfEmpty } from "./services/client.service";
-import { seedDemoTrainerIfEmpty } from "./services/trainer.service";
-import { seedDemoDailyStepsIfEmpty } from "./services/dailySteps.service";
-import { seedDemoMacrosIfEmpty } from "./services/macros.service";
-import { seedDemoMealsIfEmpty } from "./services/meal.service";
-import { seedDemoMeasurementsIfEmpty } from "./services/measurement.service";
-import { seedDemoMeasurementMastersIfEmpty } from "./services/measurementMaster.service";
-import { seedDemoProgramsIfEmpty } from "./services/program.service";
-import { seedDemoExerciseMastersIfEmpty } from "./services/exerciseMaster.service";
-import {
-  migrateRoutineExercisesToMaster,
-  seedDemoRoutineDaysIfEmpty,
-} from "./services/routineDay.service";
-import { seedDemoShoppingListIfEmpty } from "./services/shoppingList.service";
-import { seedDemoSupplementsIfEmpty } from "./services/supplements.service";
-import { seedDemoWeightsIfEmpty } from "./services/weight.service";
-import { seedDemoWellnessMastersIfEmpty } from "./services/wellnessMaster.service";
-import { seedDemoWellnessIfEmpty } from "./services/wellness.service";
-import { seedDemoWorkoutHistoryIfEmpty } from "./services/workoutHistory.service";
-import { seedDemoReviewsIfEmpty } from "./services/review.service";
+import { migrateClientProgramRefs } from "./services/client.service";
+import { migrateRoutineExercisesToMaster } from "./services/routineDay.service";
 import { migrateMeasurementObjectIds } from "./repositories/measurement.repository";
 import { migrateWellnessRefs } from "./repositories/wellness.repository";
 import * as wellnessMasterRepository from "./repositories/wellnessMaster.repository";
@@ -29,38 +11,21 @@ const port = Number(process.env.PORT) || 3000;
 
 async function main() {
   await run();
-  await seedDemoProgramsIfEmpty();
-  await seedDemoMeasurementMastersIfEmpty();
-  await seedDemoWellnessMastersIfEmpty();
   await migrateClientProgramRefs();
-  await seedDemoClientIfEmpty();
-  await seedDemoTrainerIfEmpty();
   const migrated = await migrateMeasurementObjectIds();
   if (migrated > 0) {
     console.log(`Medidas migradas a ObjectId: ${migrated}`);
   }
-  await seedDemoMeasurementsIfEmpty();
-  await seedDemoWeightsIfEmpty();
   const masters = await wellnessMasterRepository.findAllWellnessMasters();
   const masterByKey = Object.fromEntries(masters.map((m) => [m.key, m._id]));
   const wellnessMigrated = await migrateWellnessRefs((key) => masterByKey[key] ?? null);
   if (wellnessMigrated > 0) {
     console.log(`Registros Wellness migrados a ObjectId: ${wellnessMigrated}`);
   }
-  await seedDemoWellnessIfEmpty();
-  await seedDemoDailyStepsIfEmpty();
-  await seedDemoShoppingListIfEmpty();
-  await seedDemoMacrosIfEmpty();
-  await seedDemoMealsIfEmpty();
-  await seedDemoSupplementsIfEmpty();
-  await seedDemoExerciseMastersIfEmpty();
   const routineMigrated = await migrateRoutineExercisesToMaster();
   if (routineMigrated > 0) {
     console.log(`Ejercicios de rutina migrados a ExerciseMaster: ${routineMigrated}`);
   }
-  await seedDemoRoutineDaysIfEmpty();
-  await seedDemoWorkoutHistoryIfEmpty();
-  await seedDemoReviewsIfEmpty();
   server.listen(port, () => {
     console.log(`API escuchando en http://localhost:${port}`);
   });

@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import fs from "fs";
 
 import type { ExerciseCategory } from "../entities/ExerciseCategory";
 import type {
@@ -6,6 +7,7 @@ import type {
   ExerciseType,
   UpdateExerciseMasterInput,
 } from "../entities/ExerciseMaster";
+import { uploadToCloudinary } from "../libs/cloudinary";
 import * as exerciseCategoryRepository from "../repositories/exerciseCategory.repository";
 import * as exerciseMasterRepository from "../repositories/exerciseMaster.repository";
 
@@ -85,6 +87,39 @@ async function assertCategoryByKey(key: string): Promise<ExerciseCategory> {
     throw Object.assign(new Error("Categoría no encontrada"), { status: 400 });
   }
   return category;
+}
+
+function cleanTempFile(path?: string) {
+  if (!path) return;
+  fs.unlink(path, () => undefined);
+}
+
+/** Sube el fichero a Cloudinary o usa una URL ya enviada en el body. */
+async function resolveImageUrl(
+  file?: Express.Multer.File,
+  fallback?: unknown,
+): Promise<string | undefined> {
+  if (file) {
+    try {
+      const secureUrl = await uploadToCloudinary(file);
+      if (!secureUrl) {
+        throw Object.assign(new Error("Cloudinary no devolvió una URL"), { status: 502 });
+      }
+      return secureUrl;
+    } catch (err) {
+      throw Object.assign(
+        new Error(`Error al subir la imagen: ${err instanceof Error ? err.message : err}`),
+        { status: 502 },
+      );
+    } finally {
+      cleanTempFile(file.path);
+    }
+  }
+
+  if (typeof fallback === "string" && fallback.trim()) {
+    return fallback.trim();
+  }
+  return undefined;
 }
 
 export const DEMO_EXERCISE_MASTERS: CreateExerciseMasterInput[] = [
@@ -216,6 +251,7 @@ export async function getExerciseMasterById(id: string) {
 
 export async function createExerciseMaster(
   body: Partial<CreateExerciseMasterInput> & Record<string, unknown>,
+  file?: Express.Multer.File,
 ) {
   assertCreatePayload(body);
 
@@ -228,11 +264,12 @@ export async function createExerciseMaster(
 
   const rawCategory = (body as Record<string, unknown>).category;
   const category = hasCategoryValue(rawCategory) ? await resolveCategory(rawCategory) : undefined;
+  const imageUrl = await resolveImageUrl(file, body.imageUrl);
 
   return exerciseMasterRepository.insertExerciseMaster({
     name,
     type,
-    ...(body.imageUrl ? { imageUrl: String(body.imageUrl).trim() } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
     ...(body.explanation ? { explanation: String(body.explanation).trim() } : {}),
     ...(category ? { category } : {}),
   });
@@ -241,6 +278,7 @@ export async function createExerciseMaster(
 export async function updateExerciseMaster(
   id: string,
   body: UpdateExerciseMasterInput & Record<string, unknown>,
+  file?: Express.Multer.File,
 ) {
   const current = await exerciseMasterRepository.findExerciseMasterById(id);
   if (!current) {
@@ -265,8 +303,11 @@ export async function updateExerciseMaster(
     update.type = assertExerciseType(body.type);
   }
 
-  if (body.imageUrl !== undefined) {
-    update.imageUrl = String(body.imageUrl ?? "").trim() || undefined;
+  const imageUrl = await resolveImageUrl(file, body.imageUrl);
+  if (imageUrl !== undefined) {
+    update.imageUrl = imageUrl;
+  } else if (body.imageUrl !== undefined) {
+    update.imageUrl = undefined;
   }
 
   if (body.explanation !== undefined) {
@@ -313,8 +354,6 @@ export async function seedDemoExerciseMastersIfEmpty() {
 export async function ensureExerciseMastersByName(
   extras: CreateExerciseMasterInput[] = [],
 ) {
-  await seedDemoExerciseMastersIfEmpty();
-
   for (const extra of extras) {
     const found = await exerciseMasterRepository.findExerciseMasterByName(extra.name);
     if (!found) {

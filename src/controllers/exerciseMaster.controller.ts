@@ -40,7 +40,7 @@ export async function getExerciseMaster(req: Request, res: Response, next: NextF
 
 export async function createExerciseMaster(req: Request, res: Response, next: NextFunction) {
   try {
-    const master = await exerciseMasterService.createExerciseMaster(req.body);
+    const master = await exerciseMasterService.createExerciseMaster(req.body, req.file);
     res.status(201).json(master);
   } catch (err) {
     sendServiceError(err, res, next);
@@ -52,6 +52,7 @@ export async function updateExerciseMaster(req: Request, res: Response, next: Ne
     const master = await exerciseMasterService.updateExerciseMaster(
       req.params.id as string,
       req.body,
+      req.file,
     );
     res.json(master);
   } catch (err) {
