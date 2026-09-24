@@ -271,6 +271,7 @@ export async function createExerciseMaster(
     type,
     ...(imageUrl ? { imageUrl } : {}),
     ...(body.explanation ? { explanation: String(body.explanation).trim() } : {}),
+    ...(body.explanationUrl ? { explanationUrl: String(body.explanationUrl).trim() } : {}),
     ...(category ? { category } : {}),
   });
 }
@@ -312,6 +313,10 @@ export async function updateExerciseMaster(
 
   if (body.explanation !== undefined) {
     update.explanation = String(body.explanation ?? "").trim() || undefined;
+  }
+
+  if (body.explanationUrl !== undefined) {
+    update.explanationUrl = String(body.explanationUrl ?? "").trim() || undefined;
   }
 
   const rawCategory = (body as Record<string, unknown>).category;

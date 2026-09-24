@@ -14,6 +14,8 @@ export interface ExerciseMaster {
   imageUrl?: string;
   /** Explicación técnica de ejecución. */
   explanation?: string;
+  /** Enlace opcional a un vídeo o documento de apoyo. */
+  explanationUrl?: string;
   category?: ExerciseCategory;
 }
 

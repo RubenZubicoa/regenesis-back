@@ -115,6 +115,7 @@ export async function insertExerciseMaster(
     type: data.type,
     ...(data.imageUrl ? { imageUrl: data.imageUrl.trim() } : {}),
     ...(data.explanation ? { explanation: data.explanation.trim() } : {}),
+    ...(data.explanationUrl ? { explanationUrl: data.explanationUrl.trim() } : {}),
     ...(categoryRef ? { category: categoryRef } : {}),
   };
   await collection().insertOne(doc);
@@ -135,6 +136,7 @@ export async function insertManyExerciseMasters(
       type: data.type,
       ...(data.imageUrl ? { imageUrl: data.imageUrl.trim() } : {}),
       ...(data.explanation ? { explanation: data.explanation.trim() } : {}),
+      ...(data.explanationUrl ? { explanationUrl: data.explanationUrl.trim() } : {}),
       ...(categoryRef ? { category: categoryRef } : {}),
     };
   });
@@ -153,6 +155,7 @@ export async function updateExerciseMasterById(
   if (typeof update.name === "string") update.name = update.name.trim();
   if (typeof update.imageUrl === "string") update.imageUrl = update.imageUrl.trim();
   if (typeof update.explanation === "string") update.explanation = update.explanation.trim();
+  if (typeof update.explanationUrl === "string") update.explanationUrl = update.explanationUrl.trim();
 
   const unset: Record<string, ""> = {};
   const set: Record<string, unknown> = { ...update };

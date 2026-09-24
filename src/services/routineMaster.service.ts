@@ -155,6 +155,7 @@ function hydrateExercise(
     type: master?.type ?? "strength",
     ...(master?.imageUrl ? { imageUrl: master.imageUrl } : {}),
     ...(master?.explanation ? { explanation: master.explanation } : {}),
+    ...(master?.explanationUrl ? { explanationUrl: master.explanationUrl } : {}),
     ...(master?.category ? { category: master.category } : {}),
   };
 }

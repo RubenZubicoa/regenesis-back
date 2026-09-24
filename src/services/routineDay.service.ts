@@ -29,6 +29,7 @@ export type HydratedRoutineExercise = RoutineExercise & {
   type: ExerciseType;
   imageUrl?: string;
   explanation?: string;
+  explanationUrl?: string;
   category?: ExerciseCategory;
 };
 
@@ -185,6 +186,7 @@ function hydrateExercise(
     type: master?.type ?? "strength",
     ...(master?.imageUrl ? { imageUrl: master.imageUrl } : {}),
     ...(master?.explanation ? { explanation: master.explanation } : {}),
+    ...(master?.explanationUrl ? { explanationUrl: master.explanationUrl } : {}),
     ...(master?.category ? { category: master.category } : {}),
   };
 }
