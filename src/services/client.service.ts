@@ -8,6 +8,7 @@ import { uploadToCloudinary } from "../libs/cloudinary";
 import { signToken } from "../libs/jwt";
 import * as clientRepository from "../repositories/client.repository";
 import * as programRepository from "../repositories/program.repository";
+import * as renovationHistoryRepository from "../repositories/renovationHistory.repository";
 import { getCurrentWeek, getTotalWeeks } from "../utils/programProgress";
 
 const REQUIRED_FIELDS: (keyof CreateClientInput)[] = [
@@ -212,6 +213,93 @@ export async function deleteClient(id: string) {
   if (!deleted) {
     throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
   }
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function assertIsoDate(value: unknown, field: string): string {
+  const date = String(value ?? "").trim();
+  if (!ISO_DATE.test(date) || Number.isNaN(new Date(`${date}T00:00:00`).getTime())) {
+    throw Object.assign(new Error(`${field} debe ser una fecha ISO (YYYY-MM-DD)`), {
+      status: 400,
+    });
+  }
+  return date;
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function hasValue(value: unknown): boolean {
+  return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+/** Renueva el plan del cliente y guarda un registro en RenovationHistory. */
+export async function renewClientPlan(
+  id: string,
+  body: Record<string, unknown>,
+) {
+  const current = await clientRepository.findClientById(id);
+  if (!current) {
+    throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
+  }
+
+  const update: UpdateClientInput = {};
+
+  if (hasValue(body.startDate)) {
+    update.startDate = assertIsoDate(body.startDate, "startDate");
+  }
+  if (hasValue(body.endDate)) {
+    update.endDate = assertIsoDate(body.endDate, "endDate");
+  }
+  if (hasValue(body.plan)) {
+    update.plan = String(body.plan).trim();
+  }
+  if (hasValue(body.program)) {
+    const programId = parseProgramId(body.program);
+    await assertProgramExists(programId);
+    update.program = programId;
+  }
+
+  if (Object.keys(update).length === 0) {
+    throw Object.assign(
+      new Error("Debes indicar al menos un campo para renovar el plan (startDate, endDate, plan o program)"),
+      { status: 400 },
+    );
+  }
+
+  const startDate = update.startDate ?? current.startDate;
+  const endDate = update.endDate ?? current.endDate;
+
+  if (new Date(`${endDate}T00:00:00`) < new Date(`${startDate}T00:00:00`)) {
+    throw Object.assign(new Error("endDate no puede ser anterior a startDate"), {
+      status: 400,
+    });
+  }
+
+  update.totalWeeks = getTotalWeeks(startDate, endDate);
+  update.week = getCurrentWeek(startDate, endDate);
+
+  const updated = await clientRepository.updateClientById(id, update);
+  if (!updated) {
+    throw Object.assign(new Error("Cliente no encontrado"), { status: 404 });
+  }
+
+  const timestamp = nowIso();
+  const renovation = await renovationHistoryRepository.insertRenovationHistory({
+    clientId: updated._id.toHexString(),
+    startDate,
+    endDate,
+    totalWeeks: update.totalWeeks,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
+
+  return {
+    client: toPublicClient(updated),
+    renovation,
+  };
 }
 
 const LEGACY_PROGRAM_NAMES: Record<number, string> = {

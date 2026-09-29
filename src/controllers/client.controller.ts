@@ -74,3 +74,12 @@ export async function deleteClient(req: Request, res: Response, next: NextFuncti
     sendServiceError(err, res, next);
   }
 }
+
+export async function renewClientPlan(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await clientService.renewClientPlan(req.params.id as string, req.body ?? {});
+    res.status(201).json(result);
+  } catch (err) {
+    sendServiceError(err, res, next);
+  }
+}

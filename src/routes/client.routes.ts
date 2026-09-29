@@ -11,6 +11,7 @@ clientRoutes.get("/", clientController.listClients);
 clientRoutes.post("/login", clientController.loginClient);
 clientRoutes.get("/:id/measurements", measurementController.listMeasurementsByClient);
 clientRoutes.get("/:id/weights", weightController.getWeightByClient);
+clientRoutes.post("/:id/renew", clientController.renewClientPlan);
 clientRoutes.get("/:id", clientController.getClient);
 clientRoutes.post("/", uploadClientAvatar, clientController.createClient);
 clientRoutes.put("/:id", uploadClientAvatar, clientController.updateClient);
