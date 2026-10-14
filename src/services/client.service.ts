@@ -24,9 +24,15 @@ const REQUIRED_FIELDS: (keyof CreateClientInput)[] = [
   "endDate",
 ];
 
+function pickPassword(body: Record<string, unknown>): string | undefined {
+  const raw = body.contraseña ?? body.password ?? body.contrasena;
+  if (typeof raw !== "string") return undefined;
+  return raw;
+}
+
 function assertCreatePayload(body: Partial<CreateClientInput>): asserts body is CreateClientInput {
   const missing = REQUIRED_FIELDS.filter((field) => {
-    const value = body[field];
+    const value = field === "contraseña" ? pickPassword(body as Record<string, unknown>) : body[field];
     return value === undefined || value === null || value === "";
   });
 
@@ -120,7 +126,7 @@ export async function loginClient(email: string, contraseña: string) {
 }
 
 export async function createClient(
-  body: Partial<CreateClientInput> & { program?: unknown },
+  body: Partial<CreateClientInput> & { program?: unknown } & Record<string, unknown>,
   file?: Express.Multer.File,
 ) {
   assertCreatePayload(body as Partial<CreateClientInput>);
@@ -134,13 +140,14 @@ export async function createClient(
   await assertProgramExists(programId);
 
   const avatar = (await resolveAvatarUrl(file, body.avatar)) ?? "";
+  const password = pickPassword(body);
 
   const payload: CreateClientInput = {
     name: body.name!,
     fullName: body.fullName!,
     email: body.email!,
     telefono: body.telefono!,
-    contraseña: await hashPassword(body.contraseña!),
+    contraseña: await hashPassword(password!),
     goal: body.goal!,
     coach: body.coach!,
     ...(typeof body.plan === "string" && body.plan.trim() ? { plan: body.plan.trim() } : {}),
@@ -177,8 +184,11 @@ export async function updateClient(
 
   const update: UpdateClientInput = { ...body };
   delete update.avatar;
-  if (typeof body.contraseña === "string" && body.contraseña.length > 0) {
-    update.contraseña = await hashPassword(body.contraseña);
+  delete (update as Record<string, unknown>).password;
+  delete (update as Record<string, unknown>).contrasena;
+  const password = pickPassword(body as Record<string, unknown>);
+  if (typeof password === "string" && password.length > 0) {
+    update.contraseña = await hashPassword(password);
   } else {
     delete update.contraseña;
   }
