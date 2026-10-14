@@ -13,7 +13,7 @@ export interface Client {
   contraseña: string;
   goal: string;
   coach: string;
-  plan: string;
+  plan?: string;
   /** Referencia al `_id` del programa en la colección Program. */
   program: ObjectId;
   startDate: string;

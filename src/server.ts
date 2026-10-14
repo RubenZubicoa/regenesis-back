@@ -4,8 +4,10 @@ import cors from 'cors';
 
 import { errorMiddleware } from './middlewares/error.middeware';
 import { authMiddleware } from './middlewares/auth.middleware';
+import { uploadClientAvatar } from './middlewares/upload.middleware';
 import * as clientController from './controllers/client.controller';
 import * as trainerController from './controllers/trainer.controller';
+import * as programController from './controllers/program.controller';
 import clientRoutes from './routes/client.routes';
 import dailyStepsRoutes from './routes/dailySteps.routes';
 import macrosRoutes from './routes/macros.routes';
@@ -49,9 +51,11 @@ server.use((req, res, next) => {
 
 server.use("/uploads", express.static("uploads"));
 
-// Logins públicos: el token se genera aquí, no se exige de antemano
+// Logins, registro y listado de programas públicos: no exigen JWT
 server.post("/api/clients/login", clientController.loginClient);
+server.post("/api/clients", uploadClientAvatar, clientController.createClient);
 server.post("/api/trainers/login", trainerController.loginTrainer);
+server.get("/api/programs", programController.listPrograms);
 
 server.use("/api", authMiddleware);
 
