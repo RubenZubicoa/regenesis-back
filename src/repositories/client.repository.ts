@@ -12,6 +12,14 @@ function collection(): Collection<Client> {
   return database.collection<Client>(CLIENT_COLLECTION);
 }
 
+export async function ensureClientEmailIndex() {
+  try {
+    await collection().createIndex({ email: 1 }, { unique: true });
+  } catch (err) {
+    console.warn("No se pudo crear el índice único de email en Client:", err);
+  }
+}
+
 export async function findAllClients(): Promise<WithId<Client>[]> {
   return collection().find().sort({ fullName: 1 }).toArray();
 }
@@ -26,7 +34,12 @@ export async function findClientById(id: string): Promise<WithId<Client> | null>
 }
 
 export async function findClientByEmail(email: string): Promise<WithId<Client> | null> {
-  return collection().findOne({ email: email.trim().toLowerCase() });
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return collection().findOne({
+    email: { $regex: `^${escaped}$`, $options: "i" },
+  });
 }
 
 export async function insertClient(data: CreateClientInput): Promise<WithId<Client>> {

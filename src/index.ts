@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { run } from "./db/database";
 import { migrateClientProgramRefs } from "./services/client.service";
+import { ensureClientEmailIndex } from "./repositories/client.repository";
 import { migrateRoutineExercisesToMaster } from "./services/routineDay.service";
 import { migrateMeasurementObjectIds } from "./repositories/measurement.repository";
 import { migrateWellnessRefs } from "./repositories/wellness.repository";
@@ -11,6 +12,7 @@ const port = Number(process.env.PORT) || 3000;
 
 async function main() {
   await run();
+  await ensureClientEmailIndex();
   await migrateClientProgramRefs();
   const migrated = await migrateMeasurementObjectIds();
   if (migrated > 0) {

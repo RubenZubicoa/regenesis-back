@@ -24,6 +24,15 @@ const REQUIRED_FIELDS: (keyof CreateClientInput)[] = [
   "endDate",
 ];
 
+function isDuplicateEmailError(err: unknown): boolean {
+  return Boolean(
+    err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: number }).code === 11000,
+  );
+}
+
 function pickPassword(body: Record<string, unknown>): string | undefined {
   const raw = body.contraseña ?? body.password ?? body.contrasena;
   if (typeof raw !== "string") return undefined;
@@ -131,7 +140,8 @@ export async function createClient(
 ) {
   assertCreatePayload(body as Partial<CreateClientInput>);
 
-  const existing = await clientRepository.findClientByEmail(body.email!);
+  const email = String(body.email ?? "").trim().toLowerCase();
+  const existing = await clientRepository.findClientByEmail(email);
   if (existing) {
     throw Object.assign(new Error("Ya existe un cliente con ese email"), { status: 409 });
   }
@@ -145,7 +155,7 @@ export async function createClient(
   const payload: CreateClientInput = {
     name: body.name!,
     fullName: body.fullName!,
-    email: body.email!,
+    email,
     telefono: body.telefono!,
     contraseña: await hashPassword(password!),
     goal: body.goal!,
@@ -161,8 +171,15 @@ export async function createClient(
     avatar,
   };
 
-  const created = await clientRepository.insertClient(payload);
-  return toPublicClient(created);
+  try {
+    const created = await clientRepository.insertClient(payload);
+    return toPublicClient(created);
+  } catch (err) {
+    if (isDuplicateEmailError(err)) {
+      throw Object.assign(new Error("Ya existe un cliente con ese email"), { status: 409 });
+    }
+    throw err;
+  }
 }
 
 export async function updateClient(
