@@ -9,7 +9,7 @@ export interface Client {
   name: string;
   fullName: string;
   email: string;
-  telefono: string;
+  telefono?: string;
   contraseña: string;
   goal: string;
   coach: string;

@@ -15,7 +15,6 @@ const REQUIRED_FIELDS: (keyof CreateClientInput)[] = [
   "name",
   "fullName",
   "email",
-  "telefono",
   "contraseña",
   "goal",
   "coach",
@@ -156,7 +155,9 @@ export async function createClient(
     name: body.name!,
     fullName: body.fullName!,
     email,
-    telefono: body.telefono!,
+    ...(typeof body.telefono === "string" && body.telefono.trim()
+      ? { telefono: body.telefono.trim() }
+      : {}),
     contraseña: await hashPassword(password!),
     goal: body.goal!,
     coach: body.coach!,
