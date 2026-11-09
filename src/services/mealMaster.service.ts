@@ -55,13 +55,35 @@ function assertOptions(value: unknown, slotIndex: number): MealOption[] {
     }
     const description =
       item.description !== undefined ? String(item.description).trim() : undefined;
+    const ingredients = assertIngredients(item.ingredients, slotIndex, i);
 
     return {
       name,
       kcal,
       ...(description ? { description } : {}),
+      ...(ingredients ? { ingredients } : {}),
     };
   });
+}
+
+function assertIngredients(
+  value: unknown,
+  slotIndex: number,
+  optionIndex: number,
+): string[] | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (!Array.isArray(value)) {
+    throw Object.assign(
+      new Error(`slots[${slotIndex}].options[${optionIndex}].ingredients debe ser un array`),
+      { status: 400 },
+    );
+  }
+
+  const ingredients = value
+    .map((entry) => String(entry ?? "").trim())
+    .filter((entry) => entry.length > 0);
+
+  return ingredients.length > 0 ? ingredients : undefined;
 }
 
 function assertSlots(value: unknown): MealSlot[] {

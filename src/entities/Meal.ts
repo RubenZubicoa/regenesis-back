@@ -10,6 +10,7 @@ export interface MealOption {
   kcal: number;
   /** Descripción breve de la composición (opcional). */
   description?: string;
+  ingredients?: string[];
 }
 
 export interface MealSlot {
