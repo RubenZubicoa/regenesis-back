@@ -46,7 +46,7 @@ export async function getImage(req: Request, res: Response, next: NextFunction) 
 
 /**
  * POST /api/progress-images
- * Body: multipart/form-data con campo "image" (archivo) y "clientId" (texto)
+ * Body: multipart/form-data con "image" (archivo), "clientId" y opcionalmente "pose"
  */
 export async function uploadImage(req: Request, res: Response, next: NextFunction) {
   try {
@@ -60,7 +60,7 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
       return res.status(400).json({ message: "clientId es obligatorio" });
     }
 
-    const image = await progressImageService.uploadProgressImage(clientId, file);
+    const image = await progressImageService.uploadProgressImage(clientId, file, req.body?.pose);
     res.status(201).json(image);
   } catch (err) {
     sendServiceError(err, res, next);
