@@ -31,6 +31,7 @@ import reviewRoutes from './routes/review.routes';
 import progressImageRoutes from './routes/progressImage.routes';
 import videoLibraryRoutes from './routes/videoLibrary.routes';
 import trainerRoutes from './routes/trainer.routes';
+import technicalSpecificationsRoutes from './routes/technicalSpecifications.routes';
 
 const server: Application = express();
 
@@ -83,6 +84,7 @@ server.use("/api/social-feed", socialFeedRoutes);
 server.use("/api/reviews", reviewRoutes);
 server.use("/api/progress-images", progressImageRoutes);
 server.use("/api/video-library", videoLibraryRoutes);
+server.use("/api/technical-specifications", technicalSpecificationsRoutes);
 
 server.use(errorMiddleware);
 
