@@ -9,6 +9,7 @@ export interface TechnicalSpecifications {
   eatingHabits: EatingHabits;
   lifestyle: Lifestyle;
   exerciseHabits: ExerciseHabits;
+  dailyRecall: DailyRecall;
   observations: string;
   createdAt: Date;
   updatedAt: Date;
@@ -47,6 +48,21 @@ export type ExerciseHabits = {
   strengthTrainingFrequency: string;
   material: string;
 };
+
+export type DailyRecallEntry = {
+  ingredients: string;
+  quantities: string;
+  timeAndPlace: string;
+};
+
+export type DailyRecall = {
+  breakfast: DailyRecallEntry;
+  morningSnack: DailyRecallEntry;
+  lunch: DailyRecallEntry;
+  afternoonSnack: DailyRecallEntry;
+  dinner: DailyRecallEntry;
+};
+
 
 /** Datos para crear una ficha técnica (sin `_id`). */
 export type CreateTechnicalSpecificationsInput = Omit<

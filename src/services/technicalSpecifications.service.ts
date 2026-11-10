@@ -1,5 +1,7 @@
 import type {
   CreateTechnicalSpecificationsInput,
+  DailyRecall,
+  DailyRecallEntry,
   EatingHabits,
   ExerciseHabits,
   Lifestyle,
@@ -46,6 +48,20 @@ const EXERCISE_HABITS_KEYS: (keyof ExerciseHabits)[] = [
   "material",
 ];
 
+const DAILY_RECALL_MEAL_KEYS: (keyof DailyRecall)[] = [
+  "breakfast",
+  "morningSnack",
+  "lunch",
+  "afternoonSnack",
+  "dinner",
+];
+
+const DAILY_RECALL_ENTRY_KEYS: (keyof DailyRecallEntry)[] = [
+  "ingredients",
+  "quantities",
+  "timeAndPlace",
+];
+
 function assertCreatePayload(
   body: Partial<CreateTechnicalSpecificationsInput> & Record<string, unknown>,
 ): void {
@@ -75,6 +91,27 @@ function assertStringMap<T extends Record<string, string>>(
   for (const key of keys) {
     const raw = source[String(key)];
     result[key] = (raw === undefined || raw === null ? "" : String(raw).trim()) as T[keyof T];
+  }
+  return result;
+}
+
+function emptyDailyRecallEntry(): DailyRecallEntry {
+  return { ingredients: "", quantities: "", timeAndPlace: "" };
+}
+
+function assertDailyRecall(value: unknown): DailyRecall {
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const result = {} as DailyRecall;
+  for (const meal of DAILY_RECALL_MEAL_KEYS) {
+    const raw = source[meal];
+    result[meal] =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? assertStringMap<DailyRecallEntry>(raw, `dailyRecall.${meal}`, DAILY_RECALL_ENTRY_KEYS)
+        : emptyDailyRecallEntry();
   }
   return result;
 }
@@ -143,6 +180,7 @@ export async function createSpec(
       "exerciseHabits",
       EXERCISE_HABITS_KEYS,
     ),
+    dailyRecall: assertDailyRecall(body.dailyRecall),
     observations: String(body.observations ?? "").trim(),
   };
 
@@ -193,6 +231,9 @@ export async function updateSpec(
       "exerciseHabits",
       EXERCISE_HABITS_KEYS,
     );
+  }
+  if (body.dailyRecall !== undefined) {
+    update.dailyRecall = assertDailyRecall(body.dailyRecall);
   }
   if (body.observations !== undefined) {
     update.observations = String(body.observations ?? "").trim();
