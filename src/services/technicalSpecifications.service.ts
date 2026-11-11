@@ -181,6 +181,7 @@ export async function createSpec(
       EXERCISE_HABITS_KEYS,
     ),
     dailyRecall: assertDailyRecall(body.dailyRecall),
+    expectations: String(body.expectations ?? "").trim(),
     observations: String(body.observations ?? "").trim(),
   };
 
@@ -234,6 +235,9 @@ export async function updateSpec(
   }
   if (body.dailyRecall !== undefined) {
     update.dailyRecall = assertDailyRecall(body.dailyRecall);
+  }
+  if (body.expectations !== undefined) {
+    update.expectations = String(body.expectations ?? "").trim();
   }
   if (body.observations !== undefined) {
     update.observations = String(body.observations ?? "").trim();
