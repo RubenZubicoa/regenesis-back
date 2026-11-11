@@ -10,6 +10,7 @@ export interface TechnicalSpecifications {
   lifestyle: Lifestyle;
   exerciseHabits: ExerciseHabits;
   dailyRecall: DailyRecall;
+  expectations: string;
   observations: string;
   createdAt: Date;
   updatedAt: Date;
