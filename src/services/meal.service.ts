@@ -65,14 +65,15 @@ function assertOptions(value: unknown, slotIndex: number): MealOption[] {
         status: 400,
       });
     }
-    const description =
-      item.description !== undefined ? String(item.description).trim() : undefined;
+    const observationsRaw = item.observations ?? item.description;
+    const observations =
+      observationsRaw !== undefined ? String(observationsRaw).trim() : undefined;
     const ingredients = assertIngredients(item.ingredients, slotIndex, i);
 
     return {
       name,
       kcal,
-      ...(description ? { description } : {}),
+      ...(observations ? { observations } : {}),
       ...(ingredients ? { ingredients } : {}),
     };
   });
@@ -244,17 +245,17 @@ const DEMO_SLOTS: MealSlot[] = [
       {
         name: "Avena con claras y plátano",
         kcal: 420,
-        description: "Avena 50 g, 4 claras, plátano y canela",
+        observations: "Avena 50 g, 4 claras, plátano y canela",
       },
       {
         name: "Tostadas con aguacate y huevo",
         kcal: 440,
-        description: "2 tostadas integrales, medio aguacate y 2 huevos revueltos",
+        observations: "2 tostadas integrales, medio aguacate y 2 huevos revueltos",
       },
       {
         name: "Yogur proteico con fruta y granola",
         kcal: 400,
-        description: "Yogur griego 0%, frutos rojos y granola casera 30 g",
+        observations: "Yogur griego 0%, frutos rojos y granola casera 30 g",
       },
     ],
   },
@@ -266,17 +267,17 @@ const DEMO_SLOTS: MealSlot[] = [
       {
         name: "Manzana con almendras",
         kcal: 210,
-        description: "1 manzana verde y 20 g de almendras",
+        observations: "1 manzana verde y 20 g de almendras",
       },
       {
         name: "Batido de proteína con leche",
         kcal: 220,
-        description: "1 scoop whey y 250 ml leche semidesnatada",
+        observations: "1 scoop whey y 250 ml leche semidesnatada",
       },
       {
         name: "Tortitas de maíz con pavo",
         kcal: 200,
-        description: "2 tortitas y 40 g de pechuga de pavo",
+        observations: "2 tortitas y 40 g de pechuga de pavo",
       },
     ],
   },
@@ -288,17 +289,17 @@ const DEMO_SLOTS: MealSlot[] = [
       {
         name: "Pollo con arroz y verduras",
         kcal: 620,
-        description: "Pechuga 180 g, arroz integral y brócoli al vapor",
+        observations: "Pechuga 180 g, arroz integral y brócoli al vapor",
       },
       {
         name: "Pescado blanco con patata y ensalada",
         kcal: 580,
-        description: "Merluza al horno, patata cocida y ensalada mixta",
+        observations: "Merluza al horno, patata cocida y ensalada mixta",
       },
       {
         name: "Bowl de quinoa con garbanzos y verduras",
         kcal: 600,
-        description: "Quinoa, garbanzos, pimiento, pepino y aceite de oliva",
+        observations: "Quinoa, garbanzos, pimiento, pepino y aceite de oliva",
       },
     ],
   },
@@ -310,17 +311,17 @@ const DEMO_SLOTS: MealSlot[] = [
       {
         name: "Yogur griego con nueces y miel",
         kcal: 240,
-        description: "Yogur 0% 150 g, nueces 15 g y miel",
+        observations: "Yogur 0% 150 g, nueces 15 g y miel",
       },
       {
         name: "Batido de cacao y plátano",
         kcal: 250,
-        description: "Proteína sabor cacao, medio plátano y leche",
+        observations: "Proteína sabor cacao, medio plátano y leche",
       },
       {
         name: "Cottage con piña",
         kcal: 220,
-        description: "Queso cottage 150 g y piña natural 100 g",
+        observations: "Queso cottage 150 g y piña natural 100 g",
       },
     ],
   },
@@ -332,17 +333,17 @@ const DEMO_SLOTS: MealSlot[] = [
       {
         name: "Salmón al horno con ensalada",
         kcal: 480,
-        description: "Salmón 200 g, ensalada mixta y pan integral",
+        observations: "Salmón 200 g, ensalada mixta y pan integral",
       },
       {
         name: "Tortilla francesa con verduras",
         kcal: 420,
-        description: "3 huevos, espinacas, champiñones y tomate",
+        observations: "3 huevos, espinacas, champiñones y tomate",
       },
       {
         name: "Pavo a la plancha con calabacín",
         kcal: 450,
-        description: "Pechuga de pavo 180 g y calabacín salteado",
+        observations: "Pechuga de pavo 180 g y calabacín salteado",
       },
     ],
   },

@@ -53,14 +53,15 @@ function assertOptions(value: unknown, slotIndex: number): MealOption[] {
         status: 400,
       });
     }
-    const description =
-      item.description !== undefined ? String(item.description).trim() : undefined;
+    const observationsRaw = item.observations ?? item.description;
+    const observations =
+      observationsRaw !== undefined ? String(observationsRaw).trim() : undefined;
     const ingredients = assertIngredients(item.ingredients, slotIndex, i);
 
     return {
       name,
       kcal,
-      ...(description ? { description } : {}),
+      ...(observations ? { observations } : {}),
       ...(ingredients ? { ingredients } : {}),
     };
   });

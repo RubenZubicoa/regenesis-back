@@ -8,8 +8,8 @@ export interface MealOption {
   name: string;
   /** Calorías aproximadas de la comida completa. */
   kcal: number;
-  /** Descripción breve de la composición (opcional). */
-  description?: string;
+  /** Observaciones de la comida (opcional). */
+  observations?: string;
   ingredients?: string[];
 }
 
