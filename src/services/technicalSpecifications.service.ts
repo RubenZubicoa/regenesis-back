@@ -4,6 +4,8 @@ import type {
   DailyRecallEntry,
   EatingHabits,
   ExerciseHabits,
+  Job,
+  LaboralHabits,
   Lifestyle,
   PersonalHistory,
   UpdateTechnicalSpecificationsInput,
@@ -62,6 +64,8 @@ const DAILY_RECALL_ENTRY_KEYS: (keyof DailyRecallEntry)[] = [
   "timeAndPlace",
 ];
 
+const JOB_VALUES: Job[] = ["Activo", "Sedentario"];
+
 function assertCreatePayload(
   body: Partial<CreateTechnicalSpecificationsInput> & Record<string, unknown>,
 ): void {
@@ -97,6 +101,26 @@ function assertStringMap<T extends Record<string, string>>(
 
 function emptyDailyRecallEntry(): DailyRecallEntry {
   return { ingredients: "", quantities: "", timeAndPlace: "" };
+}
+
+function assertLaboralHabits(value: unknown): LaboralHabits {
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const job = String(source.job ?? "").trim();
+  if (job && !(JOB_VALUES as string[]).includes(job)) {
+    throw Object.assign(
+      new Error(`laboralHabits.job debe ser uno de: ${JOB_VALUES.join(", ")}`),
+      { status: 400 },
+    );
+  }
+
+  return {
+    job: job as Job,
+    schedule: String(source.schedule ?? "").trim(),
+  };
 }
 
 function assertDailyRecall(value: unknown): DailyRecall {
@@ -182,6 +206,7 @@ export async function createSpec(
     ),
     dailyRecall: assertDailyRecall(body.dailyRecall),
     expectations: String(body.expectations ?? "").trim(),
+    laboralHabits: assertLaboralHabits(body.laboralHabits),
     observations: String(body.observations ?? "").trim(),
   };
 
@@ -238,6 +263,9 @@ export async function updateSpec(
   }
   if (body.expectations !== undefined) {
     update.expectations = String(body.expectations ?? "").trim();
+  }
+  if (body.laboralHabits !== undefined) {
+    update.laboralHabits = assertLaboralHabits(body.laboralHabits);
   }
   if (body.observations !== undefined) {
     update.observations = String(body.observations ?? "").trim();

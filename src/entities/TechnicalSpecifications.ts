@@ -11,6 +11,7 @@ export interface TechnicalSpecifications {
   exerciseHabits: ExerciseHabits;
   dailyRecall: DailyRecall;
   expectations: string;
+  laboralHabits: LaboralHabits;
   observations: string;
   createdAt: Date;
   updatedAt: Date;
@@ -63,6 +64,13 @@ export type DailyRecall = {
   afternoonSnack: DailyRecallEntry;
   dinner: DailyRecallEntry;
 };
+
+export type Job = 'Activo' | 'Sedentario'
+
+export type LaboralHabits = {
+  job: Job;
+  schedule: string;
+}
 
 
 /** Datos para crear una ficha técnica (sin `_id`). */
